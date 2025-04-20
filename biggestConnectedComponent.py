@@ -102,8 +102,41 @@ def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
     plt.tight_layout()
     plt.show()
 
+def degree_histogram(G):
+
+    in_degrees = dict(G.in_degree())
+    out_degrees = dict(G.out_degree())
+
+    max_in = max(in_degrees.values())
+    max_out = max(out_degrees.values())
+
+    normalized_in = [deg / max_in if max_in != 0 else 0 for deg in in_degrees.values()]
+    normalized_out = [deg / max_out if max_out != 0 else 0 for deg in out_degrees.values()]
+
+    return normalized_in, normalized_out
+
+def draw_degree_histogram(normalized_in, normalized_out):
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+    # Histogram - In-Degree
+    ax1.hist(normalized_in, bins=20, color='lightcoral', edgecolor='black')
+    ax1.set_title("Normalized In-Degree Distribution", fontsize=14)
+    ax1.set_xlabel("Normalized In-Degree")
+    ax1.set_ylabel("Number of Nodes")
+
+    # Histogram - Out-Degree
+    ax2.hist(normalized_out, bins=20, color='mediumseagreen', edgecolor='black')
+    ax2.set_title("Normalized Out-Degree Distribution", fontsize=14)
+    ax2.set_xlabel("Normalized Out-Degree")
+    ax2.set_ylabel("Number of Nodes")
+
+    plt.tight_layout()
+    plt.show()
+
 
 if __name__ == '__main__':
+
     G = build_original_graph()
 
     max_connected_component_graph = build_max_connected_component_graph(G)
@@ -115,5 +148,10 @@ if __name__ == '__main__':
     node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
 
     draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
+
+    normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
+
+    draw_degree_histogram(normalized_in, normalized_out)
+
 
 
