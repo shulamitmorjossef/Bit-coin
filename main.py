@@ -2,7 +2,11 @@ import os
 import networkx as nx
 import matplotlib.pyplot as plt
 from collections import Counter
+
+from matplotlib import rcParams
 from matplotlib.ticker import MaxNLocator
+from matplotlib_venn import venn3
+
 def build_original_graph():
 
     # path to the folder containing the files
@@ -61,8 +65,6 @@ def min_max_rating(node_avg_rating):
     # Normalize ratings for color mapping
     min_rating = min(node_avg_rating.values())
     max_rating = max(node_avg_rating.values())
-    print(f"Min rating: {min_rating}")
-    print(f"Max rating: {max_rating}")
 
     return min_rating, max_rating
 
@@ -255,17 +257,81 @@ def compute_betweenness_centrality(G):
     return nx.betweenness_centrality(G)
 
 
+
+import matplotlib.pyplot as plt
+from matplotlib_venn import venn3
+
+import networkx as nx
+import matplotlib.pyplot as plt
+from matplotlib_venn import venn3
+
+def compare_centrality(G):
+    # Calculate centrality measures
+    in_deg_centrality = nx.in_degree_centrality(G)
+    out_deg_centrality = nx.out_degree_centrality(G)
+    betweenness_centrality = nx.betweenness_centrality(G)
+    closeness_centrality = nx.closeness_centrality(G)
+
+    # Get the top 10 nodes with the highest values for each centrality measure
+    top_in = sorted(in_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_out = sorted(out_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_betweenness = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_closeness = sorted(closeness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    # Print the top 10 nodes for each centrality measure, sorted by centrality value (highest to lowest)
+    print("\nTop 10 In-Degree Centrality Nodes:")
+    print([node for node, _ in top_in])
+
+    print("\nTop 10 Out-Degree Centrality Nodes:")
+    print([node for node, _ in top_out])
+
+    print("\nTop 10 Betweenness Centrality Nodes:")
+    print([node for node, _ in top_betweenness])
+
+    print("\nTop 10 Closeness Centrality Nodes:")
+    print([node for node, _ in top_closeness])
+
+    # Plot the Venn diagram showing overlaps between the top 10 nodes for each centrality measure
+    plt.figure(figsize=(5, 3))
+    venn = venn3([set(node for node, _ in top_out),
+                  set(node for node, _ in top_betweenness),
+                  set(node for node, _ in top_closeness)],
+                 set_labels=("Out-Degree", "Betweenness", "Closeness"))
+
+    # Define the colors for the Venn diagram with stronger contrast
+    venn.get_patch_by_id('100').set_facecolor('#1f77b4')  # Dark blue
+    venn.get_patch_by_id('010').set_facecolor('#ff7f0e')  # Orange
+    venn.get_patch_by_id('001').set_facecolor('#2ca02c')  # Green
+    venn.get_patch_by_id('110').set_facecolor('#9467bd')  # Purple
+    venn.get_patch_by_id('101').set_facecolor('#8c564b')  # Brown
+    venn.get_patch_by_id('011').set_facecolor('#e377c2')  # Pink
+    venn.get_patch_by_id('111').set_facecolor('#7f7f7f')  # Grey
+
+    # Remove the numbers inside the Venn diagram
+    for v in venn.subset_labels:
+        v.set_text('')
+
+    plt.title("Top 10 Centrality Nodes Overlap")
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+
 if __name__ == '__main__':
 
     G = build_original_graph()
 
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    node_avg_rating = compute_average_rating(max_connected_component_graph)
+    # node_avg_rating = compute_average_rating(max_connected_component_graph)
 
-    min_rating, max_rating = min_max_rating(node_avg_rating)
+    # min_rating, max_rating = min_max_rating(node_avg_rating)
 
-    node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
+    # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
 
     # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
 
@@ -279,43 +345,8 @@ if __name__ == '__main__':
     # compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
 
     # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
-    plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+    # plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+
+    compare_centrality(max_connected_component_graph)
 
 
-
-
-"""
-
-
-def plot_distribution(degrees, title, filename, color, max_degree=None):
-    from matplotlib.ticker import MaxNLocator
-    count = Counter(degrees)
-
-    # חיתוך לפי דרגה מקסימלית אם ביקשו
-    if max_degree:
-        count = {k: v for k, v in count.items() if k <= max_degree}
-
-    total = sum(count.values())
-    degs = sorted(count.keys())
-    freqs = [count[d] / total for d in degs]
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(degs, freqs, width=0.8, color='yellow', edgecolor='black', align='center')
-    plt.title(title)
-    plt.xlabel("Degree")
-    plt.ylabel("Relative Frequency")
-    plt.xticks(degs if len(degs) < 30 else range(0, max(degs)+1, max(1, max(degs)//15)))  # לא יותר מדי X ticks
-    plt.grid(axis='y', linestyle='--', alpha=0.6)
-    plt.tight_layout()
-    plt.savefig(filename)
-    plt.close()
-    print(f"Saved: {filename}")
-
-in_degrees = [deg for _, deg in G_sub.in_degree()]
-out_degrees = [deg for _, deg in G_sub.out_degree()]
-
-plot_distribution(in_degrees, "Normalized In-Degree Distribution", "normalized_in_degree_distribution.png", 'royalblue', max_degree=50)
-plot_distribution(out_degrees, "Normalized Out-Degree Distribution", "normalized_out_degree_distribution.png", 'tomato', max_degree=30)
-
-
-"""
