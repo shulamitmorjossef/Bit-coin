@@ -24,39 +24,27 @@ for filename in os.listdir(folder_path):
 
 
 
-print(f"G: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+
+
+# מציאת רכיב הקשירות החזק ביותר
+max_strong_component = max(nx.strongly_connected_components(G), key=len)
+# יצירת תת-גרף של רכיב הקשירות החזק ביותר
+subgraph = G.subgraph(max_strong_component).copy()
+
 
 strongly_components_G = list(nx.strongly_connected_components(G))
 print(f"Number of strongly connected components in G: {len(strongly_components_G)}")
 
-max_strong_component = max(nx.strongly_connected_components(G), key=len)
-print("Max strongly connected component size: " + str(len(max_strong_component)))
 
-
-# diameter
-# שלב 1: מציאת הרכיב החלש הכי גדול
-largest_weak_component = max(nx.weakly_connected_components(G), key=len)
-
-# שלב 2: תת-גרף רק על הרכיב הזה
-subgraph = G.subgraph(largest_weak_component).copy()
-
-# שלב 3: הפוך לגרף לא מכוון כדי לא להיתקל בבעיות חוסר קשירות
-undirected_subgraph = subgraph.to_undirected()
-
-# שלב 4: חישוב הקוטר
-try:
-    diameter = nx.diameter(undirected_subgraph)
-    print(f"Diameter of the largest weakly connected component in G: {diameter}")
-except nx.NetworkXError as e:
-    print(f"Could not compute diameter: {e}")
+print(f"MAX Stringly C COMPONENT: {subgraph.number_of_nodes()} nodes, {subgraph.number_of_edges()} edges")
 
 
 
 
 # Compute average incoming rating per node
 node_avg_rating = {}
-for node in G.nodes():
-    in_edges = G.in_edges(node, data=True)
+for node in subgraph.nodes():
+    in_edges = subgraph.in_edges(node, data=True)
     if in_edges:
         avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
         node_avg_rating[node] = avg
@@ -72,7 +60,7 @@ print(f"Max rating: {max_rating}")
 def normalize(val):
     return (val - min_rating) / (max_rating - min_rating) if max_rating != min_rating else 0.5
 
-node_colors = [normalize(node_avg_rating[n]) for n in G.nodes()]
+node_colors = [normalize(node_avg_rating[n]) for n in subgraph.nodes()]
 
 # Layout and plotting
 pos = nx.spring_layout(G, seed=42)
@@ -80,9 +68,9 @@ pos = nx.spring_layout(G, seed=42)
 fig, ax = plt.subplots(1, 2, figsize=(18, 8))
 
 # Graph drawing with color
-nodes = nx.draw_networkx_nodes(G, pos, node_color=node_colors,
+nodes = nx.draw_networkx_nodes(subgraph, pos, node_color=node_colors,
                        node_size=40, cmap=plt.cm.RdYlGn, ax=ax[0])
-nx.draw_networkx_edges(G, pos, alpha=0.05, arrows=False, ax=ax[0])
+nx.draw_networkx_edges(subgraph, pos, alpha=0.05, arrows=False, ax=ax[0])
 ax[0].set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating", fontsize=14)
 ax[0].axis("off")
 
