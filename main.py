@@ -1,10 +1,7 @@
 import os
+from collections import Counter
 import networkx as nx
 import matplotlib.pyplot as plt
-from collections import Counter
-
-from matplotlib import rcParams
-from matplotlib.ticker import MaxNLocator
 from matplotlib_venn import venn3
 
 def build_original_graph():
@@ -205,6 +202,8 @@ def plot_distribution(degrees, title, filename, color, max_degree=None):
     plt.close()
     print(f"Saved: {filename}")
 
+
+
 def plot_normalized_degree_distributions_fixed(G):
     # Collect the in-degree and out-degree values
     in_degrees = [deg for _, deg in G.in_degree()]
@@ -222,31 +221,47 @@ def compute_degree_centrality(G):
     out_deg_centrality = nx.out_degree_centrality(G)
     return in_deg_centrality, out_deg_centrality
 
+
 def compute_and_plot_degree_centrality(in_deg_centrality, out_deg_centrality):
+    # Dark mode settings
+    plt.style.use('dark_background')
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,3))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4), facecolor='black')
+    ax1.set_facecolor('black')
+    ax2.set_facecolor('black')
 
-    # In-Degree Centrality
-    ax1.hist(in_deg_centrality.values(), bins=20, color='dodgerblue', edgecolor='black')
-    ax1.set_title("In-Degree Centrality Distribution", fontsize=14)
-    ax1.set_xlabel("In-Degree Centrality")
-    ax1.set_ylabel("Number of Nodes")
+    # In-Degree Centrality - turquoise tone
+    ax1.hist(in_deg_centrality.values(), bins=20, color='#40E0D0', edgecolor='cyan')
+    ax1.set_title("In-Degree Centrality Distribution", fontsize=14, color='white')
+    ax1.set_xlabel("In-Degree Centrality", color='white')
+    ax1.set_ylabel("Number of Nodes", color='white')
+    ax1.tick_params(colors='white')
 
-    # Out-Degree Centrality
-    ax2.hist(out_deg_centrality.values(), bins=20, color='darkorange', edgecolor='black')
-    ax2.set_title("Out-Degree Centrality Distribution", fontsize=14)
-    ax2.set_xlabel("Out-Degree Centrality")
-    ax2.set_ylabel("Number of Nodes")
+    # Out-Degree Centrality - light blue tone
+    ax2.hist(out_deg_centrality.values(), bins=20, color='#00BFFF', edgecolor='deepskyblue')
+    ax2.set_title("Out-Degree Centrality Distribution", fontsize=14, color='white')
+    ax2.set_xlabel("Out-Degree Centrality", color='white')
+    ax2.set_ylabel("Number of Nodes", color='white')
+    ax2.tick_params(colors='white')
 
     plt.tight_layout()
     plt.show()
 
 def plot_centrality(centrality, label):
-    plt.figure(figsize=(8, 6))
-    plt.hist(centrality.values(), bins=20, color='mediumseagreen', edgecolor='black')
-    plt.title(f'{label} Centrality Distribution', fontsize=14)
-    plt.xlabel(f'{label} Centrality')
-    plt.ylabel("Number of Nodes")
+    # Dark mode
+    plt.style.use('dark_background')
+
+    plt.figure(figsize=(8, 6), facecolor='black')
+    ax = plt.gca()
+    ax.set_facecolor('black')
+
+    plt.hist(centrality.values(), bins=20, color='#20B2AA', edgecolor='cyan')  # lightseagreen shade
+    plt.title(f'{label} Centrality Distribution', fontsize=14, color='white')
+    plt.xlabel(f'{label} Centrality', color='white')
+    plt.ylabel("Number of Nodes", color='white')
+    plt.xticks(color='white')
+    plt.yticks(color='white')
+
     plt.tight_layout()
     plt.show()
 
@@ -255,15 +270,6 @@ def compute_closeness_centrality(G):
 
 def compute_betweenness_centrality(G):
     return nx.betweenness_centrality(G)
-
-
-
-import matplotlib.pyplot as plt
-from matplotlib_venn import venn3
-
-import networkx as nx
-import matplotlib.pyplot as plt
-from matplotlib_venn import venn3
 
 def compare_centrality(G):
     # Calculate centrality measures
@@ -327,26 +333,25 @@ if __name__ == '__main__':
 
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    # node_avg_rating = compute_average_rating(max_connected_component_graph)
+    node_avg_rating = compute_average_rating(max_connected_component_graph)
 
-    # min_rating, max_rating = min_max_rating(node_avg_rating)
+    min_rating, max_rating = min_max_rating(node_avg_rating)
 
-    # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
+    node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
 
     # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
 
-    # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
+    normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
 
     # draw_degree_histogram(normalized_in, normalized_out)
 
     # plot_normalized_degree_distributions_fixed(max_connected_component_graph)
 
-    # compute_and_plot_degree_centrality(compute_degree_centrality(max_connected_component_graph))
-    # compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
+    compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
 
-    # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
-    # plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+    plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+    plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
 
-    compare_centrality(max_connected_component_graph)
+    # compare_centrality(max_connected_component_graph)
 
 
