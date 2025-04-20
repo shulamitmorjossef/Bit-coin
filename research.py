@@ -18,10 +18,8 @@ for filename in os.listdir(folder_path):
         rating = int(parts[2])
         time = float(parts[3])
         G.add_edge(source, target, weight=rating, time=time)
-
     except Exception as e:
         print(f"Skipping file {filename} due to error: {e}")
-
 
 
 print(f"G: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
@@ -101,3 +99,62 @@ ax[1].set_ylabel("Number of Nodes")
 plt.tight_layout()
 plt.show()
 
+import math
+
+print("\n--- Small-World Property Check ---")
+
+# Convert the directed graph to undirected for small-world analysis
+G_undirected = G.to_undirected()
+
+# Step 1: Check connectivity and select the largest connected component
+if nx.is_connected(G_undirected):
+    G_lcc = G_undirected
+    print("The graph is connected.")
+else:
+    print("The graph is not fully connected.")
+    largest_cc = max(nx.connected_components(G_undirected), key=len)
+    G_lcc = G_undirected.subgraph(largest_cc).copy()
+    print(f"Largest connected component has {G_lcc.number_of_nodes()} nodes and {G_lcc.number_of_edges()} edges.")
+
+# Step 2: Compute the average shortest path length
+print("Calculating average shortest path length...")
+try:
+    avg_path_length = nx.average_shortest_path_length(G_lcc)
+    print(f"Average shortest path length: {avg_path_length:.4f}")
+except Exception as e:
+    print(f"Could not compute average shortest path length: {e}")
+    avg_path_length = None
+
+# Step 3: Compute the average clustering coefficient
+try:
+    avg_clustering = nx.average_clustering(G_lcc)
+    print(f"Average clustering coefficient: {avg_clustering:.4f}")
+except Exception as e:
+    print(f"Could not compute average clustering coefficient: {e}")
+    avg_clustering = None
+
+# Step 4: Compute the graph diameter
+try:
+    diameter = nx.diameter(G_lcc)
+    print(f"Graph diameter: {diameter}")
+except Exception as e:
+    print(f"Could not compute diameter: {e}")
+    diameter = None
+
+# Step 5: Compute log(N) as baseline for path length
+expected_log_n = math.log(G_lcc.number_of_nodes())
+print(f"Expected log(N) ≈ {expected_log_n:.4f}, where N = {G_lcc.number_of_nodes()}")
+
+# Step 6: Interpretation of small-world properties
+print("\n--- Interpretation ---")
+print("Small-world networks usually have:")
+print("1. Short average path length close to log(N)")
+print("2. High clustering coefficient (much higher than random graphs)")
+
+if avg_path_length and avg_clustering:
+    if avg_path_length <= expected_log_n * 1.5 and avg_clustering > 0.1:
+        print("✅ The graph likely exhibits small-world properties.")
+    else:
+        print("❌ The graph likely does NOT exhibit small-world properties.")
+else:
+    print("⚠️ Could not fully evaluate small-world properties due to missing data.")
