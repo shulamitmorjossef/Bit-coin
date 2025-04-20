@@ -214,6 +214,46 @@ def plot_normalized_degree_distributions_fixed(G):
     plot_distribution(out_degrees, "Normalized Out-Degree Distribution", "normalized_out_degree_distribution.png",
                       'tomato') # , max_degree=30
 
+def compute_degree_centrality(G):
+## TODO
+    in_deg_centrality = nx.in_degree_centrality(G)
+    out_deg_centrality = nx.out_degree_centrality(G)
+    return in_deg_centrality, out_deg_centrality
+
+def compute_and_plot_degree_centrality(in_deg_centrality, out_deg_centrality):
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,3))
+
+    # In-Degree Centrality
+    ax1.hist(in_deg_centrality.values(), bins=20, color='dodgerblue', edgecolor='black')
+    ax1.set_title("In-Degree Centrality Distribution", fontsize=14)
+    ax1.set_xlabel("In-Degree Centrality")
+    ax1.set_ylabel("Number of Nodes")
+
+    # Out-Degree Centrality
+    ax2.hist(out_deg_centrality.values(), bins=20, color='darkorange', edgecolor='black')
+    ax2.set_title("Out-Degree Centrality Distribution", fontsize=14)
+    ax2.set_xlabel("Out-Degree Centrality")
+    ax2.set_ylabel("Number of Nodes")
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_centrality(centrality, label):
+    plt.figure(figsize=(8, 6))
+    plt.hist(centrality.values(), bins=20, color='mediumseagreen', edgecolor='black')
+    plt.title(f'{label} Centrality Distribution', fontsize=14)
+    plt.xlabel(f'{label} Centrality')
+    plt.ylabel("Number of Nodes")
+    plt.tight_layout()
+    plt.show()
+
+def compute_closeness_centrality(G):
+    return nx.closeness_centrality(G)
+
+def compute_betweenness_centrality(G):
+    return nx.betweenness_centrality(G)
+
 
 if __name__ == '__main__':
 
@@ -233,26 +273,13 @@ if __name__ == '__main__':
 
     # draw_degree_histogram(normalized_in, normalized_out)
 
-    plot_normalized_degree_distributions_fixed(max_connected_component_graph)
+    # plot_normalized_degree_distributions_fixed(max_connected_component_graph)
 
+    # compute_and_plot_degree_centrality(compute_degree_centrality(max_connected_component_graph))
+    # compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+    plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
 
 
 
