@@ -255,7 +255,7 @@ def plot_centrality(centrality, label):
     ax = plt.gca()
     ax.set_facecolor('black')
 
-    plt.hist(centrality.values(), bins=20, color='#20B2AA', edgecolor='cyan')  # lightseagreen shade
+    plt.hist(centrality.values(), bins=20, color='#6246dc', edgecolor='cyan')  # lightseagreen shade
     plt.title(f'{label} Centrality Distribution', fontsize=14, color='white')
     plt.xlabel(f'{label} Centrality', color='white')
     plt.ylabel("Number of Nodes", color='white')
