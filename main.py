@@ -1,8 +1,9 @@
 import os
+from collections import Counter
 import networkx as nx
 import matplotlib.pyplot as plt
-from collections import Counter
-from matplotlib.ticker import MaxNLocator
+from matplotlib_venn import venn3
+
 def build_original_graph():
 
     # path to the folder containing the files
@@ -61,8 +62,6 @@ def min_max_rating(node_avg_rating):
     # Normalize ratings for color mapping
     min_rating = min(node_avg_rating.values())
     max_rating = max(node_avg_rating.values())
-    print(f"Min rating: {min_rating}")
-    print(f"Max rating: {max_rating}")
 
     return min_rating, max_rating
 
@@ -203,6 +202,8 @@ def plot_distribution(degrees, title, filename, color, max_degree=None):
     plt.close()
     print(f"Saved: {filename}")
 
+
+
 def plot_normalized_degree_distributions_fixed(G):
     # Collect the in-degree and out-degree values
     in_degrees = [deg for _, deg in G.in_degree()]
@@ -220,31 +221,47 @@ def compute_degree_centrality(G):
     out_deg_centrality = nx.out_degree_centrality(G)
     return in_deg_centrality, out_deg_centrality
 
+
 def compute_and_plot_degree_centrality(in_deg_centrality, out_deg_centrality):
+    # Dark mode settings
+    plt.style.use('dark_background')
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,3))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4), facecolor='black')
+    ax1.set_facecolor('black')
+    ax2.set_facecolor('black')
 
-    # In-Degree Centrality
-    ax1.hist(in_deg_centrality.values(), bins=20, color='dodgerblue', edgecolor='black')
-    ax1.set_title("In-Degree Centrality Distribution", fontsize=14)
-    ax1.set_xlabel("In-Degree Centrality")
-    ax1.set_ylabel("Number of Nodes")
+    # In-Degree Centrality - turquoise tone
+    ax1.hist(in_deg_centrality.values(), bins=20, color='#40E0D0', edgecolor='cyan')
+    ax1.set_title("In-Degree Centrality Distribution", fontsize=14, color='white')
+    ax1.set_xlabel("In-Degree Centrality", color='white')
+    ax1.set_ylabel("Number of Nodes", color='white')
+    ax1.tick_params(colors='white')
 
-    # Out-Degree Centrality
-    ax2.hist(out_deg_centrality.values(), bins=20, color='darkorange', edgecolor='black')
-    ax2.set_title("Out-Degree Centrality Distribution", fontsize=14)
-    ax2.set_xlabel("Out-Degree Centrality")
-    ax2.set_ylabel("Number of Nodes")
+    # Out-Degree Centrality - light blue tone
+    ax2.hist(out_deg_centrality.values(), bins=20, color='#00BFFF', edgecolor='deepskyblue')
+    ax2.set_title("Out-Degree Centrality Distribution", fontsize=14, color='white')
+    ax2.set_xlabel("Out-Degree Centrality", color='white')
+    ax2.set_ylabel("Number of Nodes", color='white')
+    ax2.tick_params(colors='white')
 
     plt.tight_layout()
     plt.show()
 
 def plot_centrality(centrality, label):
-    plt.figure(figsize=(8, 6))
-    plt.hist(centrality.values(), bins=20, color='mediumseagreen', edgecolor='black')
-    plt.title(f'{label} Centrality Distribution', fontsize=14)
-    plt.xlabel(f'{label} Centrality')
-    plt.ylabel("Number of Nodes")
+    # Dark mode
+    plt.style.use('dark_background')
+
+    plt.figure(figsize=(8, 6), facecolor='black')
+    ax = plt.gca()
+    ax.set_facecolor('black')
+
+    plt.hist(centrality.values(), bins=20, color='#6246dc', edgecolor='cyan')  # lightseagreen shade
+    plt.title(f'{label} Centrality Distribution', fontsize=14, color='white')
+    plt.xlabel(f'{label} Centrality', color='white')
+    plt.ylabel("Number of Nodes", color='white')
+    plt.xticks(color='white')
+    plt.yticks(color='white')
+
     plt.tight_layout()
     plt.show()
 
@@ -253,6 +270,61 @@ def compute_closeness_centrality(G):
 
 def compute_betweenness_centrality(G):
     return nx.betweenness_centrality(G)
+
+def compare_centrality(G):
+    # Calculate centrality measures
+    in_deg_centrality = nx.in_degree_centrality(G)
+    out_deg_centrality = nx.out_degree_centrality(G)
+    betweenness_centrality = nx.betweenness_centrality(G)
+    closeness_centrality = nx.closeness_centrality(G)
+
+    # Get the top 10 nodes with the highest values for each centrality measure
+    top_in = sorted(in_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_out = sorted(out_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_betweenness = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_closeness = sorted(closeness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    # Print the top 10 nodes for each centrality measure, sorted by centrality value (highest to lowest)
+    print("\nTop 10 In-Degree Centrality Nodes:")
+    print([node for node, _ in top_in])
+
+    print("\nTop 10 Out-Degree Centrality Nodes:")
+    print([node for node, _ in top_out])
+
+    print("\nTop 10 Betweenness Centrality Nodes:")
+    print([node for node, _ in top_betweenness])
+
+    print("\nTop 10 Closeness Centrality Nodes:")
+    print([node for node, _ in top_closeness])
+
+    # Plot the Venn diagram showing overlaps between the top 10 nodes for each centrality measure
+    plt.figure(figsize=(5, 3))
+    venn = venn3([set(node for node, _ in top_out),
+                  set(node for node, _ in top_betweenness),
+                  set(node for node, _ in top_closeness)],
+                 set_labels=("Out-Degree", "Betweenness", "Closeness"))
+
+    # Define the colors for the Venn diagram with stronger contrast
+    venn.get_patch_by_id('100').set_facecolor('#1f77b4')  # Dark blue
+    venn.get_patch_by_id('010').set_facecolor('#ff7f0e')  # Orange
+    venn.get_patch_by_id('001').set_facecolor('#2ca02c')  # Green
+    venn.get_patch_by_id('110').set_facecolor('#9467bd')  # Purple
+    venn.get_patch_by_id('101').set_facecolor('#8c564b')  # Brown
+    venn.get_patch_by_id('011').set_facecolor('#e377c2')  # Pink
+    venn.get_patch_by_id('111').set_facecolor('#7f7f7f')  # Grey
+
+    # Remove the numbers inside the Venn diagram
+    for v in venn.subset_labels:
+        v.set_text('')
+
+    plt.title("Top 10 Centrality Nodes Overlap")
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
 
 
 if __name__ == '__main__':
@@ -269,53 +341,17 @@ if __name__ == '__main__':
 
     # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
 
-    # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
+    normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
 
     # draw_degree_histogram(normalized_in, normalized_out)
 
     # plot_normalized_degree_distributions_fixed(max_connected_component_graph)
 
-    # compute_and_plot_degree_centrality(compute_degree_centrality(max_connected_component_graph))
-    # compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
+    compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
 
-    # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+    plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
     plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
 
+    # compare_centrality(max_connected_component_graph)
 
 
-
-"""
-
-
-def plot_distribution(degrees, title, filename, color, max_degree=None):
-    from matplotlib.ticker import MaxNLocator
-    count = Counter(degrees)
-
-    # חיתוך לפי דרגה מקסימלית אם ביקשו
-    if max_degree:
-        count = {k: v for k, v in count.items() if k <= max_degree}
-
-    total = sum(count.values())
-    degs = sorted(count.keys())
-    freqs = [count[d] / total for d in degs]
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(degs, freqs, width=0.8, color='yellow', edgecolor='black', align='center')
-    plt.title(title)
-    plt.xlabel("Degree")
-    plt.ylabel("Relative Frequency")
-    plt.xticks(degs if len(degs) < 30 else range(0, max(degs)+1, max(1, max(degs)//15)))  # לא יותר מדי X ticks
-    plt.grid(axis='y', linestyle='--', alpha=0.6)
-    plt.tight_layout()
-    plt.savefig(filename)
-    plt.close()
-    print(f"Saved: {filename}")
-
-in_degrees = [deg for _, deg in G_sub.in_degree()]
-out_degrees = [deg for _, deg in G_sub.out_degree()]
-
-plot_distribution(in_degrees, "Normalized In-Degree Distribution", "normalized_in_degree_distribution.png", 'royalblue', max_degree=50)
-plot_distribution(out_degrees, "Normalized Out-Degree Distribution", "normalized_out_degree_distribution.png", 'tomato', max_degree=30)
-
-
-"""
