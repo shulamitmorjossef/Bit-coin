@@ -539,7 +539,31 @@ def density(G):
     print("Density:", density)
     return density
 
+def calculate_directed_triangle_percentage(G):
+    if not G.is_directed():
+        raise ValueError("This function is for directed graphs only.")
 
+    # ממיר לגרף לא מכוון בשביל לספור משולשים (סופרת את כל המשולשים)
+    undirected_G = G.to_undirected()
+    triangle_counts = nx.triangles(undirected_G)
+
+    total_triangles = sum(triangle_counts.values()) // 3  # כל משולש נספר שלוש פעמים
+    possible_triplets = sum(1 for _ in nx.triads_by_type(G) if _ != '003')
+
+    percentage = (total_triangles / G.number_of_nodes()) * 100 if G.number_of_nodes() > 0 else 0
+
+    print(f"מספר המשולשים (משולשים סגורים): {total_triangles}")
+    print(f"אחוז המשולשים מתוך מספר הקודקודים: {percentage:.2f}%")
+
+    return total_triangles, percentage
+
+def count_directed_cycles(G):
+    if not G.is_directed():
+        raise ValueError("הגרף חייב להיות מכוון")
+
+    cycles = list(nx.simple_cycles(G))
+    print(f"מספר המעגלים בגרף: {len(cycles)}")
+    return cycles
 
 if __name__ == '__main__':
 
@@ -549,31 +573,32 @@ if __name__ == '__main__':
 
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    node_avg_rating = compute_average_rating(max_connected_component_graph)
+    # node_avg_rating = compute_average_rating(max_connected_component_graph)
+    #
+    # min_rating, max_rating = min_max_rating(node_avg_rating)
+    #
+    # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
+    #
+    # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
+    #
+    # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
+    #
+    # draw_degree_histogram(normalized_in, normalized_out)
+    #
+    # plot_normalized_degree_distributions_fixed(max_connected_component_graph)
+    #
+    # compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
+    #
+    # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+    #
+    # plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+    #
+    # compare_centrality(max_connected_component_graph)
+    #
+    # density(max_connected_component_graph)
+    #
+    # small_world(max_connected_component_graph)
 
-    min_rating, max_rating = min_max_rating(node_avg_rating)
+    calculate_directed_triangle_percentage(max_connected_component_graph)
 
-    node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
-
-    draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
-
-    normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
-
-    draw_degree_histogram(normalized_in, normalized_out)
-
-    plot_normalized_degree_distributions_fixed(max_connected_component_graph)
-
-    compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
-
-    plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
-
-    plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
-
-    compare_centrality(max_connected_component_graph)
-
-    density(max_connected_component_graph)
-
-    small_world(max_connected_component_graph)
-
-
-
+    count_directed_cycles(max_connected_component_graph)
