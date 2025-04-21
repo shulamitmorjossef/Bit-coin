@@ -6,7 +6,6 @@ from matplotlib_venn import venn3
 import math
 import matplotlib.colors as mcolors
 import numpy as np
-import matplotlib.pyplot as plt
 from collections import Counter
 
 def build_original_graph():
@@ -32,6 +31,11 @@ def build_original_graph():
             print(f"Skipping file {filename} due to error: {e}")
 
     return G
+
+# max_strong_component = max(nx.strongly_connected_components(G), key=len)
+# strongly_components_G = list(nx.strongly_connected_components(G))
+# print(f"Number of strongly connected components in G: {len(strongly_components_G)}")
+# print(f"MAX Stringly C COMPONENT: {subgraph.number_of_nodes()} nodes, {subgraph.number_of_edges()} edges")
 
 def build_max_connected_component_graph(G):
     strongly_components_G = list(nx.strongly_connected_components(G))
@@ -117,6 +121,81 @@ def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
 
     plt.tight_layout()
     plt.show()
+
+
+def plot_rating_histogram(node_avg_rating):
+    # המרת הדירוגים למערך של ערכים
+    ratings = list(node_avg_rating.values())
+
+    # יצירת היסטוגרמה עם טווח ערכים ב-10-10
+    plt.figure(figsize=(8, 6))
+
+    # הגדרת טווח ציר X (מ-10 עד 10, כל 1 יחידה)
+    bins = np.arange(-10, 11, 1)
+
+    # יצירת היסטוגרמה
+    plt.hist(ratings, bins=bins, edgecolor='black', color='deepskyblue', alpha=0.7)
+
+    # כותרת ותיוגים
+    plt.title('Distribution of Node Average Ratings', fontsize=16)
+    plt.xlabel('Average Rating', fontsize=12)
+    plt.ylabel('Number of Nodes', fontsize=12)
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+
+    # הצגת ההיסטוגרמה
+    plt.tight_layout()
+    plt.show()
+
+def compute_fixed_colors_by_ranges(G, node_avg_rating):
+    colors = []
+    for node in G.nodes():
+        avg = node_avg_rating.get(node, 0)
+        if avg < -2:
+            colors.append('#9b4d96')  # סגול כהה
+        elif avg > 2:
+            colors.append('#ffb6c1')  # ורוד בהיר (לבן ורדרד)
+        else:
+            colors.append('#d32f7f')  # ורוד-סגול
+    return colors
+
+def draw_graph_by_fixed_colors(G, node_colors):
+    plt.style.use('dark_background')
+    pos = nx.spring_layout(G, seed=42)
+
+    fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
+
+    # צביעת הקודקודים לפי הצבעים שנבחרו
+    nx.draw_networkx_nodes(
+        G, pos, node_color=node_colors,
+        node_size=40, ax=ax
+    )
+
+    # צביעת הקשתות
+    nx.draw_networkx_edges(
+        G, pos, edge_color='#20b2aa',
+        alpha=0.4, arrows=False, ax=ax
+    )
+
+    # כותרת
+    ax.set_title("Bitcoin OTC Trust Graph – Colored by Rating Ranges",
+                 fontsize=14, color='white')
+    ax.axis("off")
+
+    # יצירת מקרא
+    legend_labels = {
+        '#9b4d96': '< -2',  # סגול כהה
+        '#d32f7f': '= 2',  # ורוד-סגול
+        '#ffb6c1': '> 2'  # ורוד בהיר (לבן/ורדרד)
+    }
+
+    for color, label in legend_labels.items():
+        ax.scatter([], [], c=color, label=label, s=40)
+
+    ax.legend(frameon=False, labelcolor='white')
+
+    plt.tight_layout()
+    plt.show()
+
 
 def degree_histogram(G):
     # אוסף את דרגות הקלט והפלט
@@ -471,13 +550,28 @@ def count_directed_cycles(G):
     print(f"מספר המעגלים בגרף: {len(cycles)}")
     return cycles
 
+
 if __name__ == '__main__':
+
+
 
     # draw_original_graph()
 
     G = build_original_graph()
 
     max_connected_component_graph = build_max_connected_component_graph(G)
+
+    node_avg_rating = compute_average_rating(max_connected_component_graph)
+
+    node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
+
+    plot_rating_histogram(node_avg_rating)
+
+    min_rating, max_rating = min_max_rating(node_avg_rating)
+
+    node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
+
+    draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
 
     node_avg_rating = compute_average_rating(max_connected_component_graph)
 
@@ -507,6 +601,8 @@ if __name__ == '__main__':
     # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
     #
     # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
+
+    normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
     #
     # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
     #
@@ -597,6 +693,24 @@ if __name__ == '__main__':
 #     print(f"Saved: {filename}")
 
 
+    draw_degree_histogram(normalized_in, normalized_out)
 
+    plot_normalized_degree_distributions_fixed(max_connected_component_graph)
+
+    compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
+
+    plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+
+    plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+
+    compare_centrality(max_connected_component_graph)
+
+    density(max_connected_component_graph)
+
+    small_world(max_connected_component_graph)
+    #
+    # calculate_directed_triangle_percentage(max_connected_component_graph)
+    #
+    # count_directed_cycles(max_connected_component_graph)
 
 
