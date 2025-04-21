@@ -4,6 +4,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn3
 import math
+import matplotlib.colors as mcolors
+import numpy as np
+import matplotlib.pyplot as plt
+from collections import Counter
 
 def build_original_graph():
 
@@ -28,11 +32,6 @@ def build_original_graph():
             print(f"Skipping file {filename} due to error: {e}")
 
     return G
-
-# max_strong_component = max(nx.strongly_connected_components(G), key=len)
-# strongly_components_G = list(nx.strongly_connected_components(G))
-# print(f"Number of strongly connected components in G: {len(strongly_components_G)}")
-# print(f"MAX Stringly C COMPONENT: {subgraph.number_of_nodes()} nodes, {subgraph.number_of_edges()} edges")
 
 def build_max_connected_component_graph(G):
     strongly_components_G = list(nx.strongly_connected_components(G))
@@ -79,11 +78,6 @@ def compute_node_colors(node_avg_rating, G,  min_rating, max_rating):
     node_colors = [normalize_rating(node_avg_rating[n],  min_rating, max_rating) for n in G.nodes()]
     return node_colors
 
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import networkx as nx
-import numpy as np
-
 def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
     # Dark mode style
     plt.style.use('dark_background')
@@ -124,172 +118,6 @@ def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
     plt.tight_layout()
     plt.show()
 
-# def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
-#     # Dark mode style
-#     plt.style.use('dark_background')
-#
-#     pos = nx.spring_layout(G, seed=42)
-#
-#     fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
-#
-#     # קודקודים בגווני מג’נטה/סגול עמוקים (plasma נותן עומק ודרמה)
-#     nodes = nx.draw_networkx_nodes(
-#         G, pos, node_color=node_colors,
-#         node_size=40, cmap=plt.cm.plasma, ax=ax
-#     )
-#
-#     # צלעות בטורקיז כהה (DarkCyan)
-#     nx.draw_networkx_edges(
-#         G, pos, edge_color='#008b8b',
-#         alpha=0.4, arrows=False, ax=ax
-#     )
-#
-#     ax.set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating",
-#                  fontsize=14, color='white')
-#     ax.axis("off")
-#
-#     # Colorbar תואם לגווני הקודקודים
-#     sm = plt.cm.ScalarMappable(cmap=plt.cm.plasma)
-#     sm.set_array([min_rating, max_rating])
-#     cbar = plt.colorbar(sm, ax=ax)
-#     cbar.set_label("Average Incoming Rating", color='white')
-#     cbar.ax.yaxis.set_tick_params(color='white')
-#     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
-#
-#     plt.tight_layout()
-#     plt.show()
-
-
-# def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
-#     # Dark mode style
-#     plt.style.use('dark_background')
-#
-#     pos = nx.spring_layout(G, seed=42)
-#
-#     fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
-#
-#     # קודקודים בגווני ורוד-סגול (Purples)
-#     nodes = nx.draw_networkx_nodes(
-#         G, pos, node_color=node_colors,
-#         node_size=40, cmap=plt.cm.Purples, ax=ax
-#     )
-#
-#     # צלעות בצבע טורקיז
-#     nx.draw_networkx_edges(
-#         G, pos, edge_color='#40E0D0',  # טורקיז (Turquoise)
-#         alpha=0.3, arrows=False, ax=ax
-#     )
-#
-#     ax.set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating",
-#                  fontsize=14, color='white')
-#     ax.axis("off")
-#
-#     # Colorbar תואם לצבעי הקודקודים
-#     sm = plt.cm.ScalarMappable(cmap=plt.cm.Purples)
-#     sm.set_array([min_rating, max_rating])
-#     cbar = plt.colorbar(sm, ax=ax)
-#     cbar.set_label("Average Incoming Rating", color='white')
-#     cbar.ax.yaxis.set_tick_params(color='white')
-#     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
-#
-#     plt.tight_layout()
-#     plt.show()
-
-
-# def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
-#     # Dark mode style
-#     plt.style.use('dark_background')
-#
-#     pos = nx.spring_layout(G, seed=42)
-#
-#     fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
-#
-#     nodes = nx.draw_networkx_nodes(
-#         G, pos, node_color=node_colors,
-#         node_size=40, cmap=plt.cm.RdYlGn, ax=ax
-#     )
-#     nx.draw_networkx_edges(G, pos, alpha=0.05, arrows=False, ax=ax)
-#     ax.set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating", fontsize=14, color='white')
-#     ax.axis("off")
-#
-#     # Colorbar
-#     sm = plt.cm.ScalarMappable(cmap=plt.cm.RdYlGn)
-#     sm.set_array([min_rating, max_rating])
-#     cbar = plt.colorbar(sm, ax=ax)
-#     cbar.set_label("Average Incoming Rating", color='white')
-#     cbar.ax.yaxis.set_tick_params(color='white')
-#     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
-#
-#     plt.tight_layout()
-#     plt.show()
-
-# def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
-#
-#     # Layout and plotting
-#     pos = nx.spring_layout(G, seed=42)
-#
-#     fig, ax = plt.subplots(1, 2, figsize=(18, 8))
-#
-#     # Graph drawing with color
-#     nodes = nx.draw_networkx_nodes(G, pos, node_color=node_colors,
-#                            node_size=40, cmap=plt.cm.RdYlGn, ax=ax[0])
-#     nx.draw_networkx_edges(G, pos, alpha=0.05, arrows=False, ax=ax[0])
-#     ax[0].set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating", fontsize=14)
-#     ax[0].axis("off")
-#
-#     # Add colorbar for interpretation
-#     sm = plt.cm.ScalarMappable(cmap=plt.cm.RdYlGn)
-#     sm.set_array([min_rating, max_rating])
-#     cbar = plt.colorbar(sm, ax=ax[0])
-#     cbar.set_label("Average Incoming Rating")
-#
-#     # Histogram of avg incoming ratings
-#     # ax[1].hist(node_avg_rating.values(), bins=20, color='skyblue', edgecolor='black')
-#     # ax[1].set_title("Histogram of Average Incoming Ratings", fontsize=14)
-#     # ax[1].set_xlabel("Avg. Rating")
-#     # ax[1].set_ylabel("Number of Nodes")
-#     #
-#     # plt.tight_layout()
-#     plt.show()
-
-# def degree_histogram(G):
-#     # אוסף את דרגות הקלט והפלט
-#     in_degrees = dict(G.in_degree())
-#     out_degrees = dict(G.out_degree())
-#
-#     # חישוב הדרגות המקסימליות
-#     # max_in = max(in_degrees.values())
-#     # max_out = max(out_degrees.values())
-#
-#     # חישוב התדרים היחסיים (נירמול) לכל דרגה
-#     total_in = sum(in_degrees.values())  # סך כל הצמתים עם דרגות קלט
-#     total_out = sum(out_degrees.values())  # סך כל הצמתים עם דרגות פלט
-#
-#     # חישוב ההתפלגות היחסית של כל דרגה
-#     normalized_in = [deg / total_in for deg in in_degrees.values()] if total_in != 0 else [0] * len(in_degrees)
-#     normalized_out = [deg / total_out for deg in out_degrees.values()] if total_out != 0 else [0] * len(out_degrees)
-#
-#     return normalized_in, normalized_out
-#
-# def draw_degree_histogram(normalized_in, normalized_out):
-#
-#     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-#
-#     # Histogram - In-Degree
-#     ax1.hist(normalized_in, bins=20, color='lightcoral', edgecolor='black')
-#     ax1.set_title("Normalized In-Degree Distribution", fontsize=14)
-#     ax1.set_xlabel("Normalized In-Degree")
-#     ax1.set_ylabel("Number of Nodes")
-#
-#     # Histogram - Out-Degree
-#     ax2.hist(normalized_out, bins=20, color='mediumseagreen', edgecolor='black')
-#     ax2.set_title("Normalized Out-Degree Distribution", fontsize=14)
-#     ax2.set_xlabel("Normalized Out-Degree")
-#     ax2.set_ylabel("Number of Nodes")
-#
-#     plt.tight_layout()
-#     plt.show()
-
 def degree_histogram(G):
     # אוסף את דרגות הקלט והפלט
     in_degrees = dict(G.in_degree())
@@ -320,33 +148,39 @@ def draw_degree_histogram(in_degree_counts, out_degree_counts):
     plt.show()
 
 def plot_distribution(degrees, title, filename, color, max_degree=None):
-    # Count the frequency of each degree
+    # Count degree frequencies
     count = Counter(degrees)
-
-    # Apply a filter if a maximum degree is specified
+    count = {k: v for k, v in count.items() if k > 0}  # remove zero degrees (log undefined)
     if max_degree:
         count = {k: v for k, v in count.items() if k <= max_degree}
 
-    # Calculate the total number of occurrences
     total = sum(count.values())
+    degs = np.array(sorted(count.keys()))
+    freqs = np.array([count[d] / total for d in degs])
 
-    # Sort degrees and calculate the relative frequency
-    degs = sorted(count.keys())
-    freqs = [count[d] / total for d in degs]
+    # Take log of degrees
+    log_degs = np.log(degs)
 
-    # Create a bar plot for the degree distribution
+    # Fit a linear regression on log(degree) vs frequency
+    coeffs = np.polyfit(log_degs, freqs, 1)  # linear fit: y = a*log(x) + b
+    a, b = coeffs
+
+    # Generate smooth curve for fitted log function
+    x_smooth = np.linspace(min(degs), max(degs), 500)
+    y_smooth = a * np.log(x_smooth) + b
+
+    # Plotting
     plt.figure(figsize=(10, 6))
-    plt.bar(degs, freqs, width=0.8, color=color, edgecolor='black', align='center')
+    plt.style.use('dark_background')
+    plt.scatter(degs, freqs, color=color, edgecolors='white', label='Data')
+    plt.plot(x_smooth, y_smooth, color='gold', linewidth=2, label='Log fit')
+
     plt.title(title)
     plt.xlabel("Degree")
     plt.ylabel("Relative Frequency")
-
-    # Set the x-axis ticks based on the number of degrees
-    plt.xticks(degs if len(degs) < 30 else range(0, max(degs) + 1, max(1, max(degs) // 15)))
-    plt.grid(axis='y', linestyle='--', alpha=0.6)
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend()
     plt.tight_layout()
-
-    # Save the plot to a file and close it
     plt.savefig(filename)
     plt.close()
     print(f"Saved: {filename}")
@@ -363,7 +197,44 @@ def plot_normalized_degree_distributions_fixed(G):
                       'tomato') # , max_degree=30
 
 def compute_degree_centrality(G):
-## TODO
+
+    in_deg_centrality = nx.in_degree_centrality(G)
+    out_deg_centrality = nx.out_degree_centrality(G)
+    return in_deg_centrality, out_deg_centrality
+
+def plot_log_smoothed_centrality(centrality_values, title, color, edge_color):
+    # הסרת ערכים אפסיים
+    values = np.array(list(centrality_values.values()))
+    values = values[values > 0]
+
+    # חישוב תדירויות
+    unique_vals, counts = np.unique(values, return_counts=True)
+    freqs = counts / counts.sum()
+
+    # רגרסיה לוגריתמית
+    log_x = np.log(unique_vals)
+    coeffs = np.polyfit(log_x, freqs, 1)
+    a, b = coeffs
+
+    # יצירת עקומה חלקה
+    x_smooth = np.linspace(min(unique_vals), max(unique_vals), 500)
+    y_smooth = a * np.log(x_smooth) + b
+
+    # ציור
+    plt.style.use('dark_background')
+    plt.figure(figsize=(6, 4))
+    plt.scatter(unique_vals, freqs, color=color, edgecolor=edge_color, label='Data')
+    plt.plot(x_smooth, y_smooth, color='white', linestyle='--', label=f'y = {a:.2f} log(x) + {b:.2f}')
+
+    plt.title(title, fontsize=14, color='white')
+    plt.xlabel("Degree Centrality", color='white')
+    plt.ylabel("Relative Frequency", color='white')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+def compute_degree_centrality(G):
+
     in_deg_centrality = nx.in_degree_centrality(G)
     out_deg_centrality = nx.out_degree_centrality(G)
     return in_deg_centrality, out_deg_centrality
@@ -393,6 +264,9 @@ def compute_and_plot_degree_centrality(in_deg_centrality, out_deg_centrality):
     plt.tight_layout()
     plt.show()
 
+def compute_and_plot_smoothed_degree_centrality(in_deg_centrality, out_deg_centrality):
+    plot_log_smoothed_centrality(in_deg_centrality, "In-Degree Centrality (Log-Smoothed)", '#40E0D0', 'cyan')
+    plot_log_smoothed_centrality(out_deg_centrality, "Out-Degree Centrality (Log-Smoothed)", '#00BFFF', 'deepskyblue')
 def plot_centrality(centrality, label):
     # Dark mode
     plt.style.use('dark_background')
@@ -539,6 +413,38 @@ def density(G):
     print("Density:", density)
     return density
 
+def triangle_ratio(graph):
+    """
+    מחשבת את אחוז המשולשים מתוך כלל השלשות האפשריות בגרף נתון.
+
+    Parameters:
+        graph (networkx.Graph): גרף לא מכוון
+
+    Returns:
+        tuple: (total_triangles, possible_triplets, ratio_percent)
+    """
+
+    # סופרים כמה משולשים יש בכל קודקוד
+    triangles_dict = nx.triangles(graph)
+
+    # סכום כל המשולשים חלקי 3 (כל משולש נספר 3 פעמים)
+    total_triangles = sum(triangles_dict.values()) // 3
+
+    # שלשות אפשריות (כל זוג קשתות שיוצאות מאותו צומת)
+    possible_triplets = sum(deg * (deg - 1) / 2 for _, deg in graph.degree())
+
+    # חישוב אחוז
+    if possible_triplets == 0:
+        ratio_percent = 0.0
+    else:
+        ratio_percent = 100 * total_triangles / possible_triplets
+
+    print(f"Total triangles: {total_triangles}")
+    print(f"Possible triplets: {int(possible_triplets)}")
+    print(f"Triangle ratio: {ratio_percent:.2f}%")
+
+    return total_triangles, possible_triplets, ratio_percent
+
 
 
 if __name__ == '__main__':
@@ -555,25 +461,105 @@ if __name__ == '__main__':
 
     node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
 
-    draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
+    # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
 
     normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
 
-    draw_degree_histogram(normalized_in, normalized_out)
+    # draw_degree_histogram(normalized_in, normalized_out)
 
-    plot_normalized_degree_distributions_fixed(max_connected_component_graph)
+    ## plot_normalized_degree_distributions_fixed(max_connected_component_graph)
 
-    compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
 
-    plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+    compute_and_plot_smoothed_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
 
-    plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+    # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+    #
+    # plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+    #
+    # compare_centrality(max_connected_component_graph)
+    #
+    # density(max_connected_component_graph)
+    #
+    # small_world(max_connected_component_graph)
 
-    compare_centrality(max_connected_component_graph)
 
-    density(max_connected_component_graph)
 
-    small_world(max_connected_component_graph)
+
+
+
+
+
+
+
+
+# def compute_and_plot_degree_centrality(in_deg_centrality, out_deg_centrality):
+#     # Dark mode settings
+#     plt.style.use('dark_background')
+#
+#     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4), facecolor='black')
+#     ax1.set_facecolor('black')
+#     ax2.set_facecolor('black')
+#
+#     # In-Degree Centrality - turquoise tone
+#     ax1.hist(in_deg_centrality.values(), bins=20, color='#40E0D0', edgecolor='cyan')
+#     ax1.set_title("In-Degree Centrality Distribution", fontsize=14, color='white')
+#     ax1.set_xlabel("In-Degree Centrality", color='white')
+#     ax1.set_ylabel("Number of Nodes", color='white')
+#     ax1.tick_params(colors='white')
+#
+#     # Out-Degree Centrality - light blue tone
+#     ax2.hist(out_deg_centrality.values(), bins=20, color='#00BFFF', edgecolor='deepskyblue')
+#     ax2.set_title("Out-Degree Centrality Distribution", fontsize=14, color='white')
+#     ax2.set_xlabel("Out-Degree Centrality", color='white')
+#     ax2.set_ylabel("Number of Nodes", color='white')
+#     ax2.tick_params(colors='white')
+#
+#     plt.tight_layout()
+#     plt.show()
+
+
+# def plot_distribution(degrees, title, filename, color, max_degree=None):
+#     # Count the frequency of each degree
+#     count = Counter(degrees)
+#
+#     # Apply a filter if a maximum degree is specified
+#     if max_degree:
+#         count = {k: v for k, v in count.items() if k <= max_degree}
+#
+#     # Calculate the total number of occurrences
+#     total = sum(count.values())
+#
+#     # Sort degrees and calculate the relative frequency
+#     degs = sorted(count.keys())
+#     freqs = [count[d] / total for d in degs]
+#
+#     # Create a bar plot for the degree distribution
+#     plt.figure(figsize=(10, 6))
+#     # צבע טורקיז בהיר
+#     bar_color = '#00FFF7'  # טורקיז זוהר
+#     edge_color = '#00CED1'  # טורקיז עמוק יותר למסגרת
+#
+#     plt.style.use('dark_background')
+#     # bar_color = '#00FFF7'
+#     # edge_color ='#00CD1'
+#     plt.bar(degs, freqs, width=0.8, color=bar_color, edgecolor=edge_color, align='center')
+#
+#     # plt.xscale("log")
+#
+#     plt.title(title)
+#     plt.xlabel("Degree")
+#     plt.ylabel("Relative Frequency")
+#
+#
+#     # Set the x-axis ticks based on the number of degrees
+#     plt.xticks(degs if len(degs) < 30 else range(0, max(degs) + 1, max(1, max(degs) // 15)))
+#     plt.grid(axis='y', linestyle='--', alpha=0.6)
+#     plt.tight_layout()
+#
+#     # Save the plot to a file and close it
+#     plt.savefig(filename)
+#     plt.close()
+#     print(f"Saved: {filename}")
 
 
 
