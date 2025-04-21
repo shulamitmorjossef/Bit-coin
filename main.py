@@ -3,6 +3,7 @@ from collections import Counter
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn3
+import math
 
 def build_original_graph():
 
@@ -28,20 +29,26 @@ def build_original_graph():
 
     return G
 
-
-
 # max_strong_component = max(nx.strongly_connected_components(G), key=len)
 # strongly_components_G = list(nx.strongly_connected_components(G))
 # print(f"Number of strongly connected components in G: {len(strongly_components_G)}")
 # print(f"MAX Stringly C COMPONENT: {subgraph.number_of_nodes()} nodes, {subgraph.number_of_edges()} edges")
 
-
-
-# creating a sub graph for max strongly connected component
 def build_max_connected_component_graph(G):
+    strongly_components_G = list(nx.strongly_connected_components(G))
+    print(f"Number of strongly connected components in the graph: {len(strongly_components_G)}")
 
-    max_strong_component = max(nx.strongly_connected_components(G), key=len)
+    max_strong_component = max(strongly_components_G, key=len)
     max_strong_component_subgraph = G.subgraph(max_strong_component).copy()
+
+    num_nodes = max_strong_component_subgraph.number_of_nodes()
+    num_edges = max_strong_component_subgraph.number_of_edges()
+
+    print("====== Max Strongly Connected Component Info ======")
+    print(f"Number of nodes: {num_nodes}")
+    print(f"Number of edges: {num_edges}")
+    print("===================================================")
+
     return max_strong_component_subgraph
 
 def compute_average_rating(G):
@@ -72,35 +79,178 @@ def compute_node_colors(node_avg_rating, G,  min_rating, max_rating):
     node_colors = [normalize_rating(node_avg_rating[n],  min_rating, max_rating) for n in G.nodes()]
     return node_colors
 
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import networkx as nx
+import numpy as np
 
 def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
+    # Dark mode style
+    plt.style.use('dark_background')
 
-    # Layout and plotting
     pos = nx.spring_layout(G, seed=42)
 
-    fig, ax = plt.subplots(1, 2, figsize=(18, 8))
+    fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
 
-    # Graph drawing with color
-    nodes = nx.draw_networkx_nodes(G, pos, node_color=node_colors,
-                           node_size=40, cmap=plt.cm.RdYlGn, ax=ax[0])
-    nx.draw_networkx_edges(G, pos, alpha=0.05, arrows=False, ax=ax[0])
-    ax[0].set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating", fontsize=14)
-    ax[0].axis("off")
+    # Custom colormap: deep purple to pink, no yellow
+    deep_purple_pink = mcolors.LinearSegmentedColormap.from_list(
+        'custom_purple_pink',
+        ['#3f007d', '#8e24aa', '#d81b60']  # dark violet → purple → deep pink
+    )
 
-    # Add colorbar for interpretation
-    sm = plt.cm.ScalarMappable(cmap=plt.cm.RdYlGn)
+    nodes = nx.draw_networkx_nodes(
+        G, pos, node_color=node_colors,
+        node_size=40, cmap=deep_purple_pink, ax=ax
+    )
+
+    # Edges: טורקיז מעושן (עמוק אך חי)
+    nx.draw_networkx_edges(
+        G, pos, edge_color='#20b2aa',
+        alpha=0.4, arrows=False, ax=ax
+    )
+
+    ax.set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating",
+                 fontsize=14, color='white')
+    ax.axis("off")
+
+    # Colorbar matching the custom colormap
+    sm = plt.cm.ScalarMappable(cmap=deep_purple_pink)
     sm.set_array([min_rating, max_rating])
-    cbar = plt.colorbar(sm, ax=ax[0])
-    cbar.set_label("Average Incoming Rating")
-
-    # Histogram of avg incoming ratings
-    ax[1].hist(node_avg_rating.values(), bins=20, color='skyblue', edgecolor='black')
-    ax[1].set_title("Histogram of Average Incoming Ratings", fontsize=14)
-    ax[1].set_xlabel("Avg. Rating")
-    ax[1].set_ylabel("Number of Nodes")
+    cbar = plt.colorbar(sm, ax=ax)
+    cbar.set_label("Average Incoming Rating", color='white')
+    cbar.ax.yaxis.set_tick_params(color='white')
+    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
 
     plt.tight_layout()
     plt.show()
+
+# def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
+#     # Dark mode style
+#     plt.style.use('dark_background')
+#
+#     pos = nx.spring_layout(G, seed=42)
+#
+#     fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
+#
+#     # קודקודים בגווני מג’נטה/סגול עמוקים (plasma נותן עומק ודרמה)
+#     nodes = nx.draw_networkx_nodes(
+#         G, pos, node_color=node_colors,
+#         node_size=40, cmap=plt.cm.plasma, ax=ax
+#     )
+#
+#     # צלעות בטורקיז כהה (DarkCyan)
+#     nx.draw_networkx_edges(
+#         G, pos, edge_color='#008b8b',
+#         alpha=0.4, arrows=False, ax=ax
+#     )
+#
+#     ax.set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating",
+#                  fontsize=14, color='white')
+#     ax.axis("off")
+#
+#     # Colorbar תואם לגווני הקודקודים
+#     sm = plt.cm.ScalarMappable(cmap=plt.cm.plasma)
+#     sm.set_array([min_rating, max_rating])
+#     cbar = plt.colorbar(sm, ax=ax)
+#     cbar.set_label("Average Incoming Rating", color='white')
+#     cbar.ax.yaxis.set_tick_params(color='white')
+#     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
+#
+#     plt.tight_layout()
+#     plt.show()
+
+
+# def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
+#     # Dark mode style
+#     plt.style.use('dark_background')
+#
+#     pos = nx.spring_layout(G, seed=42)
+#
+#     fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
+#
+#     # קודקודים בגווני ורוד-סגול (Purples)
+#     nodes = nx.draw_networkx_nodes(
+#         G, pos, node_color=node_colors,
+#         node_size=40, cmap=plt.cm.Purples, ax=ax
+#     )
+#
+#     # צלעות בצבע טורקיז
+#     nx.draw_networkx_edges(
+#         G, pos, edge_color='#40E0D0',  # טורקיז (Turquoise)
+#         alpha=0.3, arrows=False, ax=ax
+#     )
+#
+#     ax.set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating",
+#                  fontsize=14, color='white')
+#     ax.axis("off")
+#
+#     # Colorbar תואם לצבעי הקודקודים
+#     sm = plt.cm.ScalarMappable(cmap=plt.cm.Purples)
+#     sm.set_array([min_rating, max_rating])
+#     cbar = plt.colorbar(sm, ax=ax)
+#     cbar.set_label("Average Incoming Rating", color='white')
+#     cbar.ax.yaxis.set_tick_params(color='white')
+#     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
+#
+#     plt.tight_layout()
+#     plt.show()
+
+
+# def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
+#     # Dark mode style
+#     plt.style.use('dark_background')
+#
+#     pos = nx.spring_layout(G, seed=42)
+#
+#     fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
+#
+#     nodes = nx.draw_networkx_nodes(
+#         G, pos, node_color=node_colors,
+#         node_size=40, cmap=plt.cm.RdYlGn, ax=ax
+#     )
+#     nx.draw_networkx_edges(G, pos, alpha=0.05, arrows=False, ax=ax)
+#     ax.set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating", fontsize=14, color='white')
+#     ax.axis("off")
+#
+#     # Colorbar
+#     sm = plt.cm.ScalarMappable(cmap=plt.cm.RdYlGn)
+#     sm.set_array([min_rating, max_rating])
+#     cbar = plt.colorbar(sm, ax=ax)
+#     cbar.set_label("Average Incoming Rating", color='white')
+#     cbar.ax.yaxis.set_tick_params(color='white')
+#     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
+#
+#     plt.tight_layout()
+#     plt.show()
+
+# def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
+#
+#     # Layout and plotting
+#     pos = nx.spring_layout(G, seed=42)
+#
+#     fig, ax = plt.subplots(1, 2, figsize=(18, 8))
+#
+#     # Graph drawing with color
+#     nodes = nx.draw_networkx_nodes(G, pos, node_color=node_colors,
+#                            node_size=40, cmap=plt.cm.RdYlGn, ax=ax[0])
+#     nx.draw_networkx_edges(G, pos, alpha=0.05, arrows=False, ax=ax[0])
+#     ax[0].set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating", fontsize=14)
+#     ax[0].axis("off")
+#
+#     # Add colorbar for interpretation
+#     sm = plt.cm.ScalarMappable(cmap=plt.cm.RdYlGn)
+#     sm.set_array([min_rating, max_rating])
+#     cbar = plt.colorbar(sm, ax=ax[0])
+#     cbar.set_label("Average Incoming Rating")
+#
+#     # Histogram of avg incoming ratings
+#     # ax[1].hist(node_avg_rating.values(), bins=20, color='skyblue', edgecolor='black')
+#     # ax[1].set_title("Histogram of Average Incoming Ratings", fontsize=14)
+#     # ax[1].set_xlabel("Avg. Rating")
+#     # ax[1].set_ylabel("Number of Nodes")
+#     #
+#     # plt.tight_layout()
+#     plt.show()
 
 # def degree_histogram(G):
 #     # אוסף את דרגות הקלט והפלט
@@ -139,7 +289,6 @@ def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
 #
 #     plt.tight_layout()
 #     plt.show()
-
 
 def degree_histogram(G):
     # אוסף את דרגות הקלט והפלט
@@ -202,8 +351,6 @@ def plot_distribution(degrees, title, filename, color, max_degree=None):
     plt.close()
     print(f"Saved: {filename}")
 
-
-
 def plot_normalized_degree_distributions_fixed(G):
     # Collect the in-degree and out-degree values
     in_degrees = [deg for _, deg in G.in_degree()]
@@ -220,7 +367,6 @@ def compute_degree_centrality(G):
     in_deg_centrality = nx.in_degree_centrality(G)
     out_deg_centrality = nx.out_degree_centrality(G)
     return in_deg_centrality, out_deg_centrality
-
 
 def compute_and_plot_degree_centrality(in_deg_centrality, out_deg_centrality):
     # Dark mode settings
@@ -321,17 +467,82 @@ def compare_centrality(G):
     plt.tight_layout()
     plt.show()
 
+def draw_original_graph():
 
+    G = build_original_graph()
 
+    nodes= compute_average_rating(G)
 
+    mini, maxi = min_max_rating(nodes)
 
+    colors = compute_node_colors(nodes, G, mini, maxi)
+
+    draw_graph(G, colors, nodes, mini, maxi)
+
+def small_world(G):
+    # Assuming G is already a directed graph (DiGraph)
+    print("\n--- Small-World Property Check (Directed Graph Only) ---")
+
+    # 1. Average Shortest Path Length (among reachable pairs)
+    print("\nCalculating all shortest path lengths...")
+    path_lengths = []
+
+    for source in G.nodes():
+        lengths = nx.single_source_shortest_path_length(G, source)
+        for target, dist in lengths.items():
+            if source != target:
+                path_lengths.append(dist)
+
+    if path_lengths:
+        diameter = max(path_lengths)
+        avg_path_length = sum(path_lengths) / len(path_lengths)
+        print(f" Reachable pairs: {len(path_lengths)}")
+        print(f" Diameter (max shortest path): {diameter}")
+        print(f" Average shortest path length: {avg_path_length:.4f}")
+    else:
+        print(" No reachable pairs found. Cannot calculate path metrics.")
+
+    # 2. Reciprocity
+    print("\nCalculating reciprocity...")
+    reciprocity = nx.reciprocity(G)
+    if reciprocity is not None:
+        print(f" Reciprocity (rate of mutual edges): {reciprocity:.4f}")
+    else:
+        print(" Could not calculate reciprocity (graph might be empty or trivial).")
+
+    # 3. Compare to log(N)
+    log_n = math.log(G.number_of_nodes())
+    print(f"\nlog(N) = {log_n:.4f}, where N = {G.number_of_nodes()}")
+
+    # 4. Final Interpretation
+    print("\n--- Interpretation ---")
+    print("Small-world networks typically have:")
+    print("1. Short average path length (≈ log(N))")
+    print("2. Significant reciprocity or local clustering")
+
+    if path_lengths:
+        short_path_check = avg_path_length <= log_n * 1.5
+        reciprocity_check = reciprocity is not None and reciprocity > 0.1
+
+        if short_path_check and reciprocity_check:
+            print(" The graph likely exhibits small-world properties.")
+        elif short_path_check:
+            print(" Short paths detected, but low reciprocity – might still be small-world.")
+        else:
+            print(" The graph likely does NOT exhibit small-world properties.")
+    else:
+        print(" Could not assess small-world properties due to lack of path data.")
 
 
 if __name__ == '__main__':
 
+    # draw_original_graph()
+
     G = build_original_graph()
 
     max_connected_component_graph = build_max_connected_component_graph(G)
+
+    small_world(max_connected_component_graph)
 
     node_avg_rating = compute_average_rating(max_connected_component_graph)
 
@@ -339,19 +550,20 @@ if __name__ == '__main__':
 
     node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
 
-    # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
+    draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
 
     normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
 
-    # draw_degree_histogram(normalized_in, normalized_out)
+    draw_degree_histogram(normalized_in, normalized_out)
 
-    # plot_normalized_degree_distributions_fixed(max_connected_component_graph)
+    plot_normalized_degree_distributions_fixed(max_connected_component_graph)
 
     compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
 
     plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+
     plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
 
-    # compare_centrality(max_connected_component_graph)
+    compare_centrality(max_connected_component_graph)
 
 
