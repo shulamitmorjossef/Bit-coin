@@ -533,6 +533,13 @@ def small_world(G):
     else:
         print(" Could not assess small-world properties due to lack of path data.")
 
+def density(G):
+
+    density = nx.density(G)
+    print("Density:", density)
+    return density
+
+
 
 if __name__ == '__main__':
 
@@ -541,8 +548,6 @@ if __name__ == '__main__':
     G = build_original_graph()
 
     max_connected_component_graph = build_max_connected_component_graph(G)
-
-    small_world(max_connected_component_graph)
 
     node_avg_rating = compute_average_rating(max_connected_component_graph)
 
@@ -565,5 +570,10 @@ if __name__ == '__main__':
     plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
 
     compare_centrality(max_connected_component_graph)
+
+    density(max_connected_component_graph)
+
+    small_world(max_connected_component_graph)
+
 
 
