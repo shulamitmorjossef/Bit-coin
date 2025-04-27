@@ -7,6 +7,8 @@ import math
 import matplotlib.colors as mcolors
 import numpy as np
 from collections import Counter
+import random
+from scipy.stats import linregress
 
 def build_original_graph():
 
@@ -31,11 +33,6 @@ def build_original_graph():
             print(f"Skipping file {filename} due to error: {e}")
 
     return G
-
-# max_strong_component = max(nx.strongly_connected_components(G), key=len)
-# strongly_components_G = list(nx.strongly_connected_components(G))
-# print(f"Number of strongly connected components in G: {len(strongly_components_G)}")
-# print(f"MAX Stringly C COMPONENT: {subgraph.number_of_nodes()} nodes, {subgraph.number_of_edges()} edges")
 
 def build_max_connected_component_graph(G):
     strongly_components_G = list(nx.strongly_connected_components(G))
@@ -88,7 +85,7 @@ def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
 
     pos = nx.spring_layout(G, seed=42)
 
-    fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
+    fig, ax = plt.subplots(figsize=(10, 8), facecolor='white')
 
     # Custom colormap: deep purple to pink, no yellow
     deep_purple_pink = mcolors.LinearSegmentedColormap.from_list(
@@ -121,7 +118,6 @@ def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
 
     plt.tight_layout()
     plt.show()
-
 
 def plot_rating_histogram(node_avg_rating):
     # המרת הדירוגים למערך של ערכים
@@ -195,7 +191,6 @@ def draw_graph_by_fixed_colors(G, node_colors):
 
     plt.tight_layout()
     plt.show()
-
 
 def degree_histogram(G):
     # אוסף את דרגות הקלט והפלט
@@ -312,6 +307,7 @@ def plot_log_smoothed_centrality(centrality_values, title, color, edge_color):
     plt.legend()
     plt.tight_layout()
     plt.show()
+
 def compute_degree_centrality(G):
 
     in_deg_centrality = nx.in_degree_centrality(G)
@@ -346,6 +342,7 @@ def compute_and_plot_degree_centrality(in_deg_centrality, out_deg_centrality):
 def compute_and_plot_smoothed_degree_centrality(in_deg_centrality, out_deg_centrality):
     plot_log_smoothed_centrality(in_deg_centrality, "In-Degree Centrality (Log-Smoothed)", '#40E0D0', 'cyan')
     plot_log_smoothed_centrality(out_deg_centrality, "Out-Degree Centrality (Log-Smoothed)", '#00BFFF', 'deepskyblue')
+
 def plot_centrality(centrality, label):
     # Dark mode
     plt.style.use('dark_background')
@@ -550,59 +547,225 @@ def count_directed_cycles(G):
     print(f"מספר המעגלים בגרף: {len(cycles)}")
     return cycles
 
+def giant_component_sizes(G, edge_order):
+    sizes = []
+    for edge in edge_order:
+        if G.has_edge(*edge):
+            G.remove_edge(*edge)
+        if len(G.edges) > 0:
+            largest_cc = max(nx.strongly_connected_components(G), key=len)
+            sizes.append(len(largest_cc))
+        else:
+            sizes.append(0)
+    return sizes
+
+def create_orders_and_draw(G):
+    G_random = build_max_connected_component_graph(G)
+    G_heavy_first = build_max_connected_component_graph(G)
+    G_light_first = build_max_connected_component_graph(G)
+    G_betweenness = build_max_connected_component_graph(G)
+
+    # 1. רנדומלי
+    random_edges = list(G_random.edges())
+    random.shuffle(random_edges)
+    sizes_random = giant_component_sizes(G_random, random_edges)
+
+    # 2. כבדות -> קלות
+    heavy_edges = sorted(G_heavy_first.edges(data=True), key=lambda x: -x[2]['weight'])
+    heavy_edges_list = [(u, v) for u, v, _ in heavy_edges]
+    sizes_heavy = giant_component_sizes(G_heavy_first, heavy_edges_list)
+
+    # 3. קלות -> כבדות
+    light_edges = sorted(G_light_first.edges(data=True), key=lambda x: x[2]['weight'])
+    light_edges_list = [(u, v) for u, v, _ in light_edges]
+    sizes_light = giant_component_sizes(G_light_first, light_edges_list)
+
+    # 4. לפי Betweenness
+    betweenness = nx.edge_betweenness_centrality(G_betweenness)
+    betweenness_edges = sorted(betweenness.items(), key=lambda x: -x[1])
+    betweenness_edges_list = [edge for edge, _ in betweenness_edges]
+    sizes_betweenness = giant_component_sizes(G_betweenness, betweenness_edges_list)
+
+    # ציור גרף אחד עם ארבע עקומות
+    plt.figure(figsize=(12, 8))
+    plt.plot(sizes_random, label="Random Removal", color='blue')
+    plt.plot(sizes_heavy, label="Heavy → Light", color='red')
+    plt.plot(sizes_light, label="Light → Heavy", color='green')
+    plt.plot(sizes_betweenness, label="High Betweenness", color='purple')
+
+    plt.xlabel("Edges Removed")
+    plt.ylabel("Size of Giant Component")
+    plt.title("Edge Removal and Giant Component Size")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    fig, axs = plt.subplots(2, 2, figsize=(14, 10))
+    axs = axs.flatten()
+
+    axs[0].plot(sizes_random, color='blue')
+    axs[0].set_title("Random Edge Removal")
+
+    axs[1].plot(sizes_heavy, color='red')
+    axs[1].set_title("Heavy to Light Edge Removal")
+
+    axs[2].plot(sizes_light, color='green')
+    axs[2].set_title("Light to Heavy Edge Removal")
+
+    axs[3].plot(sizes_betweenness, color='purple')
+    axs[3].set_title("High Betweenness Edge Removal")
+
+    for ax in axs:
+        ax.set_xlabel("Edges Removed")
+        ax.set_ylabel("Size of Giant Component")
+        ax.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+# Function to calculate the neighborhood overlap for each edge in the graph
+def calculate_neighborhood_overlap(G):
+    overlaps = []  # List to store overlap coefficients
+    weights = []  # List to store edge weights
+
+    for u, v, data in G.edges(data=True):  # Iterate through all edges in the graph
+        neighbors_u = set(G.neighbors(u))  # Get the neighbors of node u
+        neighbors_v = set(G.neighbors(v))  # Get the neighbors of node v
+
+        common = neighbors_u & neighbors_v  # Find the common neighbors between u and v
+        union = neighbors_u | neighbors_v  # Find the union of neighbors between u and v
+
+        # Calculate the overlap coefficient (common neighbors / total unique neighbors)
+        overlap = len(common) / len(union) if len(union) > 0 else 0
+
+        overlaps.append(overlap)  # Append the overlap coefficient to the list
+        weights.append(data['weight'])  # Append the weight of the edge to the list
+
+    return overlaps, weights  # Return the overlap coefficients and weights
+
+# # Function to plot the neighborhood overlap vs. edge weight with a trend line
+
+def plot_neighborhood_overlap(G, title, filename):
+    overlaps, weights = calculate_neighborhood_overlap(G)  # Get overlap and weight data
+
+    # Calculate the linear regression trend line (slope and intercept)
+    slope, intercept, _, _, _ = linregress(weights, overlaps)
+    trend_y = [slope * w + intercept for w in weights]  # Calculate the trend line values
+
+    # Create the plot with white background
+    plt.style.use('default')  # Use default (white) style
+    plt.figure(figsize=(10, 6), facecolor='white')
+    ax = plt.gca()
+    ax.set_facecolor('white')  # Set axis background to white
+
+    # Scatter plot of data points with colorful points
+    plt.scatter(weights, overlaps, alpha=0.7, color='blue', edgecolors='green', linewidths=0.3, label='Edges')
+
+    # Plot the trend line with red color
+    plt.plot(weights, trend_y, linestyle='--', color='red', linewidth=2, label='Trend Line')
+
+    # Set titles and labels with black color (since background is white)
+    plt.title(title, fontsize=14, weight='bold', color='black')
+    plt.xlabel("Weight", fontsize=12, color='black')
+    plt.ylabel("Overlap", fontsize=12, color='black')
+
+    # Set the ticks color to black for contrast
+    plt.xticks(color='black')
+    plt.yticks(color='black')
+
+    # Enable grid with dashed lines and light alpha
+    plt.grid(True, linestyle='--', alpha=0.6)
+
+    # Display legend
+    plt.legend()
+
+    # Adjust layout for better spacing
+    plt.tight_layout()
+
+    # Save the plot to a file with high resolution
+    plt.savefig(filename, dpi=300)
+
+    # Show the plot
+    plt.show()
+
+
+# def plot_neighborhood_overlap(G, title, filename):
+#     overlaps, weights = calculate_neighborhood_overlap(G)  # Get overlap and weight data
+#
+#     # Calculate the linear regression trend line (slope and intercept)
+#     slope, intercept, _, _, _ = linregress(weights, overlaps)
+#     trend_y = [slope * w + intercept for w in weights]  # Calculate the trend line values
+#
+#     # Create the plot with black background
+#     plt.style.use('dark_background')  # Set dark background for the plot
+#     plt.figure(figsize=(10, 6), facecolor='white')
+#     ax = plt.gca()
+#     ax.set_facecolor('black')  # Set axis background to black
+#
+#     # Scatter plot of data points with glowing blue and purple shades
+#     plt.scatter(weights, overlaps, alpha=0.7, color='#6246dc', edgecolors='cyan', linewidths=0.3, label='Edges')
+#
+#     # Plot the trend line with a glowing red effect
+#     plt.plot(weights, trend_y, linestyle='--', color='magenta', linewidth=2, label='Trend Line')
+#
+#     # Set titles and labels with white color
+#     plt.title(title, fontsize=14, weight='bold', color='white')
+#     plt.xlabel("Weight", fontsize=12, color='white')
+#     plt.ylabel("Overlap", fontsize=12, color='white')
+#
+#     # Set the ticks color to white for contrast
+#     plt.xticks(color='white')
+#     plt.yticks(color='white')
+#
+#     # Enable grid with dashed lines and light alpha
+#     plt.grid(True, linestyle='--', alpha=0.4)
+#
+#     # Display legend
+#     plt.legend()
+#
+#     # Adjust layout for better spacing
+#     plt.tight_layout()
+#
+#     # Save the plot to a file with high resolution
+#     plt.savefig(filename, dpi=300)
+#
+#     # Show the plot
+#     plt.show()
+#
+#
+
+
+
+
 
 if __name__ == '__main__':
-
-
-
-    # draw_original_graph()
 
     G = build_original_graph()
 
     max_connected_component_graph = build_max_connected_component_graph(G)
 
     node_avg_rating = compute_average_rating(max_connected_component_graph)
-
-    node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
-
-    plot_rating_histogram(node_avg_rating)
-
-    min_rating, max_rating = min_max_rating(node_avg_rating)
-
-    node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
-
-    draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
-
-    node_avg_rating = compute_average_rating(max_connected_component_graph)
-
-    min_rating, max_rating = min_max_rating(node_avg_rating)
-
-    node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
-
-    # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
-
-    normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
-
-    # draw_degree_histogram(normalized_in, normalized_out)
-
-    ## plot_normalized_degree_distributions_fixed(max_connected_component_graph)
-
-
-    compute_and_plot_smoothed_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
-
-    # calculate_directed_triangle_percentage(max_connected_component_graph)
     #
-    # count_directed_cycles(max_connected_component_graph)
-
+    node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
+    #
+    # plot_rating_histogram(node_avg_rating)
+    #
+    # min_rating, max_rating = min_max_rating(node_avg_rating)
+    #
+    # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
+    #
+    draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
+    #
     # node_avg_rating = compute_average_rating(max_connected_component_graph)
     #
     # min_rating, max_rating = min_max_rating(node_avg_rating)
     #
     # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
     #
-    # draw_graph(max_connected_component_graph, node_colors, node_avg_rating, min_rating, max_rating)
-
-    normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
+    # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
+    #
+    # compute_and_plot_smoothed_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
     #
     # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
     #
@@ -611,106 +774,23 @@ if __name__ == '__main__':
     # plot_normalized_degree_distributions_fixed(max_connected_component_graph)
     #
     # compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
-
-
-
-
-
-
-
-
-
-
-
-
-# def compute_and_plot_degree_centrality(in_deg_centrality, out_deg_centrality):
-#     # Dark mode settings
-#     plt.style.use('dark_background')
-#
-#     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4), facecolor='black')
-#     ax1.set_facecolor('black')
-#     ax2.set_facecolor('black')
-#
-#     # In-Degree Centrality - turquoise tone
-#     ax1.hist(in_deg_centrality.values(), bins=20, color='#40E0D0', edgecolor='cyan')
-#     ax1.set_title("In-Degree Centrality Distribution", fontsize=14, color='white')
-#     ax1.set_xlabel("In-Degree Centrality", color='white')
-#     ax1.set_ylabel("Number of Nodes", color='white')
-#     ax1.tick_params(colors='white')
-#
-#     # Out-Degree Centrality - light blue tone
-#     ax2.hist(out_deg_centrality.values(), bins=20, color='#00BFFF', edgecolor='deepskyblue')
-#     ax2.set_title("Out-Degree Centrality Distribution", fontsize=14, color='white')
-#     ax2.set_xlabel("Out-Degree Centrality", color='white')
-#     ax2.set_ylabel("Number of Nodes", color='white')
-#     ax2.tick_params(colors='white')
-#
-#     plt.tight_layout()
-#     plt.show()
-
-
-# def plot_distribution(degrees, title, filename, color, max_degree=None):
-#     # Count the frequency of each degree
-#     count = Counter(degrees)
-#
-#     # Apply a filter if a maximum degree is specified
-#     if max_degree:
-#         count = {k: v for k, v in count.items() if k <= max_degree}
-#
-#     # Calculate the total number of occurrences
-#     total = sum(count.values())
-#
-#     # Sort degrees and calculate the relative frequency
-#     degs = sorted(count.keys())
-#     freqs = [count[d] / total for d in degs]
-#
-#     # Create a bar plot for the degree distribution
-#     plt.figure(figsize=(10, 6))
-#     # צבע טורקיז בהיר
-#     bar_color = '#00FFF7'  # טורקיז זוהר
-#     edge_color = '#00CED1'  # טורקיז עמוק יותר למסגרת
-#
-#     plt.style.use('dark_background')
-#     # bar_color = '#00FFF7'
-#     # edge_color ='#00CD1'
-#     plt.bar(degs, freqs, width=0.8, color=bar_color, edgecolor=edge_color, align='center')
-#
-#     # plt.xscale("log")
-#
-#     plt.title(title)
-#     plt.xlabel("Degree")
-#     plt.ylabel("Relative Frequency")
-#
-#
-#     # Set the x-axis ticks based on the number of degrees
-#     plt.xticks(degs if len(degs) < 30 else range(0, max(degs) + 1, max(1, max(degs) // 15)))
-#     plt.grid(axis='y', linestyle='--', alpha=0.6)
-#     plt.tight_layout()
-#
-#     # Save the plot to a file and close it
-#     plt.savefig(filename)
-#     plt.close()
-#     print(f"Saved: {filename}")
-
-
-    draw_degree_histogram(normalized_in, normalized_out)
-
-    plot_normalized_degree_distributions_fixed(max_connected_component_graph)
-
-    compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
-
-    plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
-
-    plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
-
-    compare_centrality(max_connected_component_graph)
-
-    density(max_connected_component_graph)
-
-    small_world(max_connected_component_graph)
     #
-    # calculate_directed_triangle_percentage(max_connected_component_graph)
+    # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
     #
-    # count_directed_cycles(max_connected_component_graph)
+    # plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+    #
+    # compare_centrality(max_connected_component_grapSh)
+    #
+    # density(max_connected_component_graph)
+    #
+    # small_world(max_connected_component_graph)
+    #
+    # create_orders_and_draw()
+
+    # create_orders_and_draw(G)
+
+    plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+
+
 
 
