@@ -789,7 +789,7 @@ if __name__ == '__main__':
 
     # create_orders_and_draw(G)
 
-    plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    plot_neighborhood_overlap(max_connected_component_graph, "Overlap  and Weight", "neighborhood_overlap.png")
 
 
 
