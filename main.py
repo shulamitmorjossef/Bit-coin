@@ -10,6 +10,96 @@ from collections import Counter
 import random
 from scipy.stats import linregress
 
+
+def compute_fixed_colors_by_ranges(G, node_avg_rating):
+    colors = []
+    for node in G.nodes():
+        avg = node_avg_rating.get(node, 0)
+        if avg < -2:
+            colors.append('#0000FF')  # כחול
+        elif avg > 2:
+            colors.append('#FFFF00')  # צהוב
+        else:
+            colors.append('#FF0000')  # אדום
+    return colors
+
+def draw_graph(G, node_colors, node_avg_rating, min_rating, max_rating):
+    # ביטול מצב dark mode
+    plt.style.use('default')
+
+    pos = nx.spring_layout(G, seed=42)
+
+    fig, ax = plt.subplots(figsize=(10, 8), facecolor='white')
+
+    # Colormap חדש: כחול → אדום → צהוב
+    blue_red_yellow = mcolors.LinearSegmentedColormap.from_list(
+        'custom_bry',
+        ['blue', 'red', 'yellow']
+    )
+
+    nodes = nx.draw_networkx_nodes(
+        G, pos, node_color=node_colors,
+        node_size=40, cmap=blue_red_yellow, ax=ax
+    )
+
+    # קשתות בגוון כחול-אדום
+    nx.draw_networkx_edges(
+        G, pos, edge_color='darkblue',
+        alpha=0.3, arrows=False, ax=ax
+    )
+
+    ax.set_title("Bitcoin OTC Trust Graph – Colored by Avg. Incoming Rating",
+                 fontsize=14, color='black')
+    ax.axis("off")
+
+    # Colorbar מותאם
+    sm = plt.cm.ScalarMappable(cmap=blue_red_yellow)
+    sm.set_array([min_rating, max_rating])
+    cbar = plt.colorbar(sm, ax=ax)
+    cbar.set_label("Average Incoming Rating", color='black')
+    cbar.ax.yaxis.set_tick_params(color='black')
+    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='black')
+
+    plt.tight_layout()
+    plt.show()
+
+def draw_graph_by_fixed_colors(G, node_colors):
+    plt.style.use('default')
+    pos = nx.spring_layout(G, seed=42)
+
+    fig, ax = plt.subplots(figsize=(10, 8), facecolor='white')
+
+    nx.draw_networkx_nodes(
+        G, pos, node_color=node_colors,
+        node_size=40, ax=ax
+    )
+
+    nx.draw_networkx_edges(
+        G, pos, edge_color='darkblue',
+        alpha=0.3, arrows=False, ax=ax
+    )
+
+    ax.set_title("Bitcoin OTC Trust Graph – Colored by Rating Ranges",
+                 fontsize=14, color='black')
+    ax.axis("off")
+
+    # מקרא חדש
+    legend_labels = {
+        '#0000FF': '< -2',  # כחול כהה
+        '#FF0000': '= 2',   # אדום
+        '#FFFF00': '> 2'    # צהוב
+    }
+
+    for color, label in legend_labels.items():
+        ax.scatter([], [], c=color, label=label, s=40)
+
+    ax.legend(frameon=False, labelcolor='black')
+
+    plt.tight_layout()
+    plt.show()
+
+
+
 def build_original_graph():
 
     # path to the folder containing the files
@@ -142,55 +232,55 @@ def plot_rating_histogram(node_avg_rating):
     plt.tight_layout()
     plt.show()
 
-def compute_fixed_colors_by_ranges(G, node_avg_rating):
-    colors = []
-    for node in G.nodes():
-        avg = node_avg_rating.get(node, 0)
-        if avg < -2:
-            colors.append('#9b4d96')  # סגול כהה
-        elif avg > 2:
-            colors.append('#ffb6c1')  # ורוד בהיר (לבן ורדרד)
-        else:
-            colors.append('#d32f7f')  # ורוד-סגול
-    return colors
+# def compute_fixed_colors_by_ranges(G, node_avg_rating):
+#     colors = []
+#     for node in G.nodes():
+#         avg = node_avg_rating.get(node, 0)
+#         if avg < -2:
+#             colors.append('#9b4d96')  # סגול כהה
+#         elif avg > 2:
+#             colors.append('#ffb6c1')  # ורוד בהיר (לבן ורדרד)
+#         else:
+#             colors.append('#d32f7f')  # ורוד-סגול
+#     return colors
 
-def draw_graph_by_fixed_colors(G, node_colors):
-    plt.style.use('dark_background')
-    pos = nx.spring_layout(G, seed=42)
-
-    fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
-
-    # צביעת הקודקודים לפי הצבעים שנבחרו
-    nx.draw_networkx_nodes(
-        G, pos, node_color=node_colors,
-        node_size=40, ax=ax
-    )
-
-    # צביעת הקשתות
-    nx.draw_networkx_edges(
-        G, pos, edge_color='#20b2aa',
-        alpha=0.4, arrows=False, ax=ax
-    )
-
-    # כותרת
-    ax.set_title("Bitcoin OTC Trust Graph – Colored by Rating Ranges",
-                 fontsize=14, color='white')
-    ax.axis("off")
-
-    # יצירת מקרא
-    legend_labels = {
-        '#9b4d96': '< -2',  # סגול כהה
-        '#d32f7f': '= 2',  # ורוד-סגול
-        '#ffb6c1': '> 2'  # ורוד בהיר (לבן/ורדרד)
-    }
-
-    for color, label in legend_labels.items():
-        ax.scatter([], [], c=color, label=label, s=40)
-
-    ax.legend(frameon=False, labelcolor='white')
-
-    plt.tight_layout()
-    plt.show()
+# def draw_graph_by_fixed_colors(G, node_colors):
+#     plt.style.use('dark_background')
+#     pos = nx.spring_layout(G, seed=42)
+#
+#     fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
+#
+#     # צביעת הקודקודים לפי הצבעים שנבחרו
+#     nx.draw_networkx_nodes(
+#         G, pos, node_color=node_colors,
+#         node_size=40, ax=ax
+#     )
+#
+#     # צביעת הקשתות
+#     nx.draw_networkx_edges(
+#         G, pos, edge_color='#20b2aa',
+#         alpha=0.4, arrows=False, ax=ax
+#     )
+#
+#     # כותרת
+#     ax.set_title("Bitcoin OTC Trust Graph – Colored by Rating Ranges",
+#                  fontsize=14, color='white')
+#     ax.axis("off")
+#
+#     # יצירת מקרא
+#     legend_labels = {
+#         '#9b4d96': '< -2',  # סגול כהה
+#         '#d32f7f': '= 2',  # ורוד-סגול
+#         '#ffb6c1': '> 2'  # ורוד בהיר (לבן/ורדרד)
+#     }
+#
+#     for color, label in legend_labels.items():
+#         ax.scatter([], [], c=color, label=label, s=40)
+#
+#     ax.legend(frameon=False, labelcolor='white')
+#
+#     plt.tight_layout()
+#     plt.show()
 
 def degree_histogram(G):
     # אוסף את דרגות הקלט והפלט
@@ -746,7 +836,7 @@ if __name__ == '__main__':
     max_connected_component_graph = build_max_connected_component_graph(G)
 
     node_avg_rating = compute_average_rating(max_connected_component_graph)
-    #
+
     node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
     #
     # plot_rating_histogram(node_avg_rating)
