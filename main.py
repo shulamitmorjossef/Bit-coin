@@ -779,6 +779,24 @@ def plot_neighborhood_overlap(G, title, filename):
     # Show the plot
     plt.show()
 
+# --- Gilbert model Random graphes  G(n, m) ---
+def build_gnm_graph(G):
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    gnm = nx.gnm_random_graph(n, m, directed=True)
+    return gnm
+
+def draw_Graph(G, title="Bit Coin"):
+    plt.figure(figsize=(6, 4))
+
+    pos = nx.spring_layout(G, seed=42)
+
+    nx.draw(G, pos, with_labels=False, node_color='blue', edge_color='gray', node_size=40, width=1)
+
+    plt.suptitle(title, fontsize=16, fontweight='bold')
+
+    plt.show()
+
 
 # def plot_neighborhood_overlap(G, title, filename):
 #     overlaps, weights = calculate_neighborhood_overlap(G)  # Get overlap and weight data
@@ -835,9 +853,9 @@ if __name__ == '__main__':
 
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    node_avg_rating = compute_average_rating(max_connected_component_graph)
+    # node_avg_rating = compute_average_rating(max_connected_component_graph)
 
-    node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
+    # node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
     #
     # plot_rating_histogram(node_avg_rating)
     #
@@ -845,7 +863,7 @@ if __name__ == '__main__':
     #
     # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
     #
-    draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
+    # draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
     #
     # node_avg_rating = compute_average_rating(max_connected_component_graph)
     #
@@ -879,8 +897,11 @@ if __name__ == '__main__':
 
     # create_orders_and_draw(G)
 
-    plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    # plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
 
+    # gilber model G(n,m)
+
+    draw_Graph(build_gnm_graph(max_connected_component_graph), "G(n, m) Graph")
 
 
 
