@@ -9,6 +9,8 @@ import numpy as np
 from collections import Counter
 import random
 from scipy.stats import linregress
+import powerlaw
+
 
 
 def compute_fixed_colors_by_ranges(G, node_avg_rating):
@@ -779,55 +781,51 @@ def plot_neighborhood_overlap(G, title, filename):
     # Show the plot
     plt.show()
 
+# --- Gilbert model Random graphes  G(n, m) ---
+def build_gnm_graph(G):
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    gnm = nx.gnm_random_graph(n, m, directed=True)
+    return gnm
 
-# def plot_neighborhood_overlap(G, title, filename):
-#     overlaps, weights = calculate_neighborhood_overlap(G)  # Get overlap and weight data
-#
-#     # Calculate the linear regression trend line (slope and intercept)
-#     slope, intercept, _, _, _ = linregress(weights, overlaps)
-#     trend_y = [slope * w + intercept for w in weights]  # Calculate the trend line values
-#
-#     # Create the plot with black background
-#     plt.style.use('dark_background')  # Set dark background for the plot
-#     plt.figure(figsize=(10, 6), facecolor='white')
-#     ax = plt.gca()
-#     ax.set_facecolor('black')  # Set axis background to black
-#
-#     # Scatter plot of data points with glowing blue and purple shades
-#     plt.scatter(weights, overlaps, alpha=0.7, color='#6246dc', edgecolors='cyan', linewidths=0.3, label='Edges')
-#
-#     # Plot the trend line with a glowing red effect
-#     plt.plot(weights, trend_y, linestyle='--', color='magenta', linewidth=2, label='Trend Line')
-#
-#     # Set titles and labels with white color
-#     plt.title(title, fontsize=14, weight='bold', color='white')
-#     plt.xlabel("Weight", fontsize=12, color='white')
-#     plt.ylabel("Overlap", fontsize=12, color='white')
-#
-#     # Set the ticks color to white for contrast
-#     plt.xticks(color='white')
-#     plt.yticks(color='white')
-#
-#     # Enable grid with dashed lines and light alpha
-#     plt.grid(True, linestyle='--', alpha=0.4)
-#
-#     # Display legend
-#     plt.legend()
-#
-#     # Adjust layout for better spacing
-#     plt.tight_layout()
-#
-#     # Save the plot to a file with high resolution
-#     plt.savefig(filename, dpi=300)
-#
-#     # Show the plot
-#     plt.show()
-#
-#
+def draw_Graph(G, title="Bit Coin"):
+    plt.figure(figsize=(6, 4))
 
+    pos = nx.spring_layout(G, seed=42)
 
+    nx.draw(G, pos, with_labels=False, node_color='blue', edge_color='gray', node_size=40, width=1)
 
+    plt.suptitle(title, fontsize=16, fontweight='bold')
 
+    plt.show()
+
+def check_powerlaw_builtin(G):
+    degrees = [d for _, d in G.degree()]
+    results = powerlaw.Fit(degrees, discrete=True)
+
+    print(f"Estimated alpha (γ): {results.power_law.alpha:.2f}")
+    print(f"Xmin (starting point for power law): {results.power_law.xmin}")
+
+    R, p = results.distribution_compare('power_law', 'lognormal')
+    print(f"\nComparison with lognormal: R = {R:.2f}, p = {p:.4f}")
+
+    if R > 0 and p < 0.05:
+        print("✅ Data follows power law better than lognormal.")
+    elif R < 0 and p < 0.05:
+        print("❌ Lognormal fits better than power law.")
+    else:
+        print("ℹ️ No clear winner – can't confidently say it's power law.")
+
+    # Plot
+    results.plot_pdf(color='b', label='Empirical')
+    results.power_law.plot_pdf(color='r', linestyle='--', label='Power law fit')
+    plt.xlabel("Degree")
+    plt.ylabel("P(k)")
+    plt.legend()
+    plt.grid(True, which='both', ls='--', alpha=0.5)
+    plt.title("Degree Distribution with Power Law Fit")
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == '__main__':
 
@@ -835,9 +833,9 @@ if __name__ == '__main__':
 
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    node_avg_rating = compute_average_rating(max_connected_component_graph)
+    # node_avg_rating = compute_average_rating(max_connected_component_graph)
 
-    node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
+    # node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
     #
     # plot_rating_histogram(node_avg_rating)
     #
@@ -845,7 +843,7 @@ if __name__ == '__main__':
     #
     # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
     #
-    draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
+    # draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
     #
     # node_avg_rating = compute_average_rating(max_connected_component_graph)
     #
@@ -879,9 +877,14 @@ if __name__ == '__main__':
 
     # create_orders_and_draw(G)
 
-    plot_neighborhood_overlap(max_connected_component_graph, "Overlap  and Weight", "neighborhood_overlap.png")
+    # plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+
+    # gilber model G(n,m)
+
+    # draw_Graph(build_gnm_graph(max_connected_component_graph), "G(n, m) Graph")
 
 
+    check_powerlaw_builtin(max_connected_component_graph)
 
 
 
