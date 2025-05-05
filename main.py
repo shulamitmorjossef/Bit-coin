@@ -827,6 +827,107 @@ def check_powerlaw_builtin(G):
     plt.tight_layout()
     plt.show()
 
+# import matplotlib.pyplot as plt
+# import numpy as np
+
+def plot_directed_degree_distributions(G, degree_type='in'):
+    """
+    Plot 3 degree distributions for a directed graph:
+    1. Regular histogram
+    2. Normalized histogram
+    3. Log-X histogram (bars)
+
+    Parameters:
+    - G: A directed NetworkX graph (nx.DiGraph)
+    - degree_type: 'in', 'out', or 'total'
+    """
+    if degree_type == 'in':
+        degrees = [d for _, d in G.in_degree()]
+        label = 'In-Degree'
+    elif degree_type == 'out':
+        degrees = [d for _, d in G.out_degree()]
+        label = 'Out-Degree'
+    elif degree_type == 'total':
+        degrees = [G.in_degree(n) + G.out_degree(n) for n in G.nodes()]
+        label = 'Total Degree'
+    else:
+        raise ValueError("degree_type must be 'in', 'out', or 'total'")
+
+    # Prepare histogram bins
+    max_deg = max(degrees)
+    bins = np.arange(1, max_deg + 2) - 0.5  # integer bins
+
+    # 1. Regular histogram
+    plt.figure(figsize=(8, 5))
+    plt.hist(degrees, bins=bins, color='skyblue', edgecolor='black')
+    plt.xlabel(label)
+    plt.ylabel('Frequency')
+    plt.title(f'{label} Distribution (Regular)')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+    # 2. Normalized histogram
+    plt.figure(figsize=(8, 5))
+    plt.hist(degrees, bins=bins, density=True, color='lightgreen', edgecolor='black')
+    plt.xlabel(label)
+    plt.ylabel('Probability Density')
+    plt.title(f'{label} Distribution (Normalized)')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+    # 3. Log-X histogram
+    plt.figure(figsize=(8, 5))
+    plt.hist(degrees, bins=bins, color='salmon', edgecolor='black')
+    plt.xscale('log')
+    plt.xlabel(f'{label} (log scale)')
+    plt.ylabel('Frequency')
+    plt.title(f'{label} Distribution (Log X-axis)')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+def giant_component_directed(G):
+    """
+
+    Parameters:
+    - G: nx.DiGraph
+    """
+    components = list(nx.strongly_connected_components(G))
+    giant_component = max(components, key=len)
+    giant_subgraph = G.subgraph(giant_component).copy()
+
+    print("giant_component (directed): Nodes =", giant_subgraph.number_of_nodes())
+    print("giant_component (directed): Edges =", giant_subgraph.number_of_edges())
+
+    return giant_subgraph
+
+def average_distance_directed(G):
+    """
+    מחשבת את מרחק המסלול הקצר הממוצע בגרף מכוון.
+    תומכת רק אם הוא strongly connected.
+
+    Parameters:
+    - G: nx.DiGraph
+    """
+    if nx.is_strongly_connected(G):
+        return nx.average_shortest_path_length(G)
+    else:
+        print("Warning: Graph is not strongly connected.")
+        return float('inf')
+
+def draw_GNM_Graph(G, title="Game of Thrones Graph"):
+    plt.figure(figsize=(6, 4))
+
+    pos = nx.spring_layout(G, seed=42)
+
+    nx.draw(G, pos, with_labels=False, node_color='red', edge_color='gray', node_size=80, width=1)
+
+    plt.suptitle(title, fontsize=16, fontweight='bold')
+
+    plt.show()
+
 if __name__ == '__main__':
 
     G = build_original_graph()
@@ -881,10 +982,21 @@ if __name__ == '__main__':
 
     # gilber model G(n,m)
 
-    # draw_Graph(build_gnm_graph(max_connected_component_graph), "G(n, m) Graph")
+    Gnm = build_gnm_graph(max_connected_component_graph)
+    draw_Graph(Gnm, "G(n, m) Graph")
 
+
+    plot_directed_degree_distributions(Gnm, degree_type='in')
+    plot_directed_degree_distributions(Gnm, degree_type='out')
+    plot_directed_degree_distributions(Gnm, degree_type='total')
+
+    G_giant = giant_component_directed(Gnm)
+    draw_Graph(G_giant, "G(n, m) Giant component")
+    avg_dist = average_distance_directed(G_giant)
+    print("Average Distance in Giant Component:", avg_dist)
 
     check_powerlaw_builtin(max_connected_component_graph)
+
 
 
 
