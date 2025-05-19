@@ -793,7 +793,7 @@ def draw_Graph(G, title="Bit Coin"):
 
     pos = nx.spring_layout(G, seed=42)
 
-    nx.draw(G, pos, with_labels=False, node_color='blue', edge_color='gray', node_size=40, width=1)
+    nx.draw(G, pos, with_labels=False, node_color='red', edge_color='gray', node_size=20, width=1)
 
     plt.suptitle(title, fontsize=16, fontweight='bold')
 
@@ -922,11 +922,25 @@ def draw_GNM_Graph(G, title="Game of Thrones Graph"):
 
     pos = nx.spring_layout(G, seed=42)
 
-    nx.draw(G, pos, with_labels=False, node_color='red', edge_color='gray', node_size=80, width=1)
+    nx.draw(G, pos, with_labels=False, node_color='red', edge_color='gray', node_size=30, width=1)
 
     plt.suptitle(title, fontsize=16, fontweight='bold')
 
     plt.show()
+
+def build_preferential_attachment_model(original):
+    n = original.number_of_nodes()
+    m_total = original.number_of_edges()
+
+    m = max(1, int(m_total / n))
+
+    G = nx.barabasi_albert_graph(n, m, seed=42)
+
+    print(f"- {G.number_of_nodes()} nodes")
+    print(f"- {G.number_of_edges()} edges")
+    print(f"Chosen m value: {m}")
+    return G
+
 
 if __name__ == '__main__':
 
@@ -982,20 +996,23 @@ if __name__ == '__main__':
 
     # gilber model G(n,m)
 
-    Gnm = build_gnm_graph(max_connected_component_graph)
-    draw_Graph(Gnm, "G(n, m) Graph")
+    # Gnm = build_gnm_graph(max_connected_component_graph)
+    # draw_Graph(Gnm, "G(n, m) Graph")
+
+    Gpa = build_preferential_attachment_model(max_connected_component_graph)
+    draw_Graph(Gpa, "preferential attachment model Graph")
 
 
-    plot_directed_degree_distributions(Gnm, degree_type='in')
-    plot_directed_degree_distributions(Gnm, degree_type='out')
-    plot_directed_degree_distributions(Gnm, degree_type='total')
-
-    G_giant = giant_component_directed(Gnm)
-    draw_Graph(G_giant, "G(n, m) Giant component")
-    avg_dist = average_distance_directed(G_giant)
-    print("Average Distance in Giant Component:", avg_dist)
-
-    check_powerlaw_builtin(max_connected_component_graph)
+    # plot_directed_degree_distributions(Gnm, degree_type='in')
+    # plot_directed_degree_distributions(Gnm, degree_type='out')
+    # plot_directed_degree_distributions(Gnm, degree_type='total')
+    #
+    # G_giant = giant_component_directed(Gnm)
+    # draw_Graph(G_giant, "G(n, m) Giant component")
+    # avg_dist = average_distance_directed(G_giant)
+    # print("Average Distance in Giant Component:", avg_dist)
+    #
+    # check_powerlaw_builtin(max_connected_component_graph)
 
 
 
