@@ -830,7 +830,7 @@ def check_powerlaw_builtin(G):
 # import matplotlib.pyplot as plt
 # import numpy as np
 
-def plot_directed_degree_distributions(G, degree_type='in'):
+def plot_directed_degree_distributions(G, degree_type='in', title=' '):
     """
     Plot 3 degree distributions for a directed graph:
     1. Regular histogram
@@ -857,33 +857,33 @@ def plot_directed_degree_distributions(G, degree_type='in'):
     max_deg = max(degrees)
     bins = np.arange(1, max_deg + 2) - 0.5  # integer bins
 
-    # 1. Regular histogram
-    plt.figure(figsize=(8, 5))
-    plt.hist(degrees, bins=bins, color='skyblue', edgecolor='black')
-    plt.xlabel(label)
-    plt.ylabel('Frequency')
-    plt.title(f'{label} Distribution (Regular)')
-    plt.grid(True, linestyle='--', alpha=0.5)
-    plt.tight_layout()
-    plt.show()
+    # # 1. Regular histogram
+    # plt.figure(figsize=(8, 5))
+    # plt.hist(degrees, bins=bins, color='skyblue', edgecolor='black')
+    # plt.xlabel(label)
+    # plt.ylabel('Frequency')
+    # plt.title(f'{label} Distribution (Regular)')
+    # plt.grid(True, linestyle='--', alpha=0.5)
+    # plt.tight_layout()
+    # plt.show()
 
-    # 2. Normalized histogram
-    plt.figure(figsize=(8, 5))
-    plt.hist(degrees, bins=bins, density=True, color='lightgreen', edgecolor='black')
-    plt.xlabel(label)
-    plt.ylabel('Probability Density')
-    plt.title(f'{label} Distribution (Normalized)')
-    plt.grid(True, linestyle='--', alpha=0.5)
-    plt.tight_layout()
-    plt.show()
-
+    # # 2. Normalized histogram
+    # plt.figure(figsize=(8, 5))
+    # plt.hist(degrees, bins=bins, density=True, color='lightgreen', edgecolor='black')
+    # plt.xlabel(label)
+    # plt.ylabel('Probability Density')
+    # plt.title(f'{label} Distribution (Normalized)')
+    # plt.grid(True, linestyle='--', alpha=0.5)
+    # plt.tight_layout()
+    # plt.show()
+    #
     # 3. Log-X histogram
     plt.figure(figsize=(8, 5))
     plt.hist(degrees, bins=bins, color='salmon', edgecolor='black')
     plt.xscale('log')
     plt.xlabel(f'{label} (log scale)')
     plt.ylabel('Frequency')
-    plt.title(f'{label} Distribution (Log X-axis)')
+    plt.title(f'{label} Distribution (Log X-axis) {title}')
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.show()
@@ -928,17 +928,90 @@ def draw_GNM_Graph(G, title="Game of Thrones Graph"):
 
     plt.show()
 
-def build_preferential_attachment_model(original):
-    n = original.number_of_nodes()
-    m_total = original.number_of_edges()
 
+
+# def build_preferential_attachment_model(original):
+#     n = original.number_of_nodes()
+#     m_total = original.number_of_edges()
+#
+#     m = max(1, int(m_total / n))
+#
+#     G = nx.DiGraph()
+#     G.add_nodes_from(range(n))
+#
+#     # רשימת קשרים
+#     targets = list(range(m))
+#
+#     for source in range(m, n):
+#         # בחירת m קשרים לפי הסתברות
+#         if len(targets) < m:
+#             print(f"Error: Not enough nodes to attach for node {source} (m={m}, available={len(targets)})")
+#             break
+#
+#         # בחירה עם הסתברות מבוססת דרגות
+#         chosen = random.choices(targets, k=m)
+#         G.add_edges_from((source, t) for t in chosen)
+#
+#         # עדכון רשימת היעדים
+#         targets.extend([source] * m)
+#
+#     print(f"- {G.number_of_nodes()} nodes")
+#     print(f"- {G.number_of_edges()} edges")
+#     print(f"Chosen m value: {m}")
+#
+#     return G
+
+
+
+def build_preferential_attachment_model(original_graph, seed=None):
+    if seed is not None:
+        random.seed(seed)
+
+    n = original_graph.number_of_nodes()
+    m_total = original_graph.number_of_edges()
+
+    # Estimate m: average out-degree (can be rounded down to avoid over-connectivity)
     m = max(1, int(m_total / n))
 
-    G = nx.barabasi_albert_graph(n, m, seed=42)
+    G = nx.DiGraph()
 
+    # Start with m isolated nodes
+    for i in range(m):
+        G.add_node(i)
+
+    for new_node in range(m, n):
+        G.add_node(new_node)
+
+        # Get current in-degrees with smoothing to avoid zero probability
+        targets = list(G.nodes)
+        in_degrees = [G.in_degree(node) + 1 for node in targets]
+        total_weight = sum(in_degrees)
+
+        chosen = set()
+        while len(chosen) < min(m, len(targets)):
+            r = random.uniform(0, total_weight)
+            acc = 0
+            for node, weight in zip(targets, in_degrees):
+                acc += weight
+                if acc >= r:
+                    if node != new_node and node not in chosen:
+                        chosen.add(node)
+                    break
+
+        # Add directed edges from the new node to the chosen targets
+        for target in chosen:
+            G.add_edge(new_node, target)
+
+    # Print summary
+    print("Original graph:")
+    print(f"- {n} nodes")
+    print(f"- {m_total} edges")
+
+    print("\nGenerated directed graph (Preferential Attachment):")
     print(f"- {G.number_of_nodes()} nodes")
     print(f"- {G.number_of_edges()} edges")
     print(f"Chosen m value: {m}")
+
     return G
 
 
@@ -1000,12 +1073,17 @@ if __name__ == '__main__':
     # draw_Graph(Gnm, "G(n, m) Graph")
 
     Gpa = build_preferential_attachment_model(max_connected_component_graph)
-    draw_Graph(Gpa, "preferential attachment model Graph")
+    # draw_Graph(Gpa, "preferential attachment model Graph")
 
 
-    # plot_directed_degree_distributions(Gnm, degree_type='in')
-    # plot_directed_degree_distributions(Gnm, degree_type='out')
-    # plot_directed_degree_distributions(Gnm, degree_type='total')
+    plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
+    plot_directed_degree_distributions(Gpa, degree_type='in', title='pa')
+
+    plot_directed_degree_distributions(max_connected_component_graph, degree_type='out', title='max_connected_component_graph')
+    plot_directed_degree_distributions(Gpa, degree_type='out', title='pa')
+
+    plot_directed_degree_distributions(max_connected_component_graph, degree_type='total', title='max_connected_component_graph')
+    plot_directed_degree_distributions(Gpa, degree_type='total', title='pa')
     #
     # G_giant = giant_component_directed(Gnm)
     # draw_Graph(G_giant, "G(n, m) Giant component")
