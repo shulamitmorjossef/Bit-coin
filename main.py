@@ -928,17 +928,73 @@ def draw_GNM_Graph(G, title="Game of Thrones Graph"):
 
     plt.show()
 
+# def build_preferential_attachment_model(original):
+#     n = original.number_of_nodes()
+#     m_total = original.number_of_edges()
+#
+#     m = max(1, int(m_total / n))
+#
+#     G = nx.barabasi_albert_graph(n, m, seed=42)
+#
+#     print(f"- {G.number_of_nodes()} nodes")
+#     print(f"- {G.number_of_edges()} edges")
+#     print(f"Chosen m value: {m}")
+#     return G
+
+# def build_preferential_attachment_model(original):
+#     n = original.number_of_nodes()
+#     m_total = original.number_of_edges()
+#
+#     # קביעת ערך m לפי הגרף המקורי
+#     m = max(1, int(m_total / n))
+#
+#     # יצירת גרף מכוון עם הצמדות מועדפת
+#     G = nx.DiGraph()
+#     G.add_nodes_from(range(n))
+#
+#     # מחברים קשתות לפי הצמדות מועדפת
+#     targets = list(range(m))
+#     for source in range(m, n):
+#         G.add_edges_from((source, t) for t in targets)
+#         targets.extend([source] * m)
+#
+#     print(f"- {G.number_of_nodes()} nodes")
+#     print(f"- {G.number_of_edges()} edges")
+#     print(f"Chosen m value: {m}")
+#
+#     return G
+
 def build_preferential_attachment_model(original):
     n = original.number_of_nodes()
     m_total = original.number_of_edges()
 
+    # קביעת ערך m לפי הגרף המקורי
     m = max(1, int(m_total / n))
 
-    G = nx.barabasi_albert_graph(n, m, seed=42)
+    # יצירת גרף מכוון
+    G = nx.DiGraph()
+    G.add_nodes_from(range(n))
+
+    # רשימת קשרים
+    targets = list(range(m))
+
+    for source in range(m, n):
+        # בחירת m קשרים לפי הסתברות
+        if len(targets) < m:
+            print(f"Error: Not enough nodes to attach for node {source} (m={m}, available={len(targets)})")
+            break
+
+        # בחירה עם הסתברות מבוססת דרגות
+        chosen = random.choices(targets, k=m)
+        G.add_edges_from((source, t) for t in chosen)
+
+        # עדכון רשימת היעדים
+        targets.extend([source] * m)
 
     print(f"- {G.number_of_nodes()} nodes")
     print(f"- {G.number_of_edges()} edges")
     print(f"Chosen m value: {m}")
+
     return G
 
 
@@ -1003,16 +1059,16 @@ if __name__ == '__main__':
     draw_Graph(Gpa, "preferential attachment model Graph")
 
 
-    # plot_directed_degree_distributions(Gnm, degree_type='in')
-    # plot_directed_degree_distributions(Gnm, degree_type='out')
-    # plot_directed_degree_distributions(Gnm, degree_type='total')
+    plot_directed_degree_distributions(Gpa, degree_type='in')
+    plot_directed_degree_distributions(Gpa, degree_type='out')
+    plot_directed_degree_distributions(Gpa, degree_type='total')
     #
-    # G_giant = giant_component_directed(Gnm)
-    # draw_Graph(G_giant, "G(n, m) Giant component")
-    # avg_dist = average_distance_directed(G_giant)
-    # print("Average Distance in Giant Component:", avg_dist)
+    G_giant = giant_component_directed(Gpa)
+    draw_Graph(G_giant, "preferential attachment Giant component")
+    avg_dist = average_distance_directed(G_giant)
+    print("Average Distance in Giant Component:", avg_dist)
     #
-    # check_powerlaw_builtin(max_connected_component_graph)
+    check_powerlaw_builtin(max_connected_component_graph)
 
 
 
