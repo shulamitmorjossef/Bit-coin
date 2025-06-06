@@ -246,7 +246,7 @@ def plot_rating_histogram(node_avg_rating):
 #             colors.append('#d32f7f')  # ורוד-סגול
 #     return colors
 
-# def draw_graph_by_fixed_colors(G, node_colors):
+# def draw_graph_by_fixed_colorsdraw_graph_by_fixed_colors(G, node_colors):
 #     plt.style.use('dark_background')
 #     pos = nx.spring_layout(G, seed=42)
 #
@@ -827,8 +827,7 @@ def check_powerlaw_builtin(G):
     plt.tight_layout()
     plt.show()
 
-# import matplotlib.pyplot as plt
-# import numpy as np
+
 
 def plot_directed_degree_distributions(G, degree_type='in', title=' '):
     """
@@ -971,7 +970,9 @@ def build_preferential_attachment_model(original_graph, seed=None):
     m_total = original_graph.number_of_edges()
 
     # Estimate m: average out-degree (can be rounded down to avoid over-connectivity)
-    m = max(1, int(m_total / n))
+    # m = max(1, int(m_total / n))
+    m = 3
+
 
     G = nx.DiGraph()
 
@@ -1011,6 +1012,58 @@ def build_preferential_attachment_model(original_graph, seed=None):
     print(f"- {G.number_of_nodes()} nodes")
     print(f"- {G.number_of_edges()} edges")
     print(f"Chosen m value: {m}")
+
+    return G
+
+
+
+import networkx as nx
+import random
+
+import networkx as nx
+import random
+
+
+def mixed_preferential_attachment_graph(n, m, r=0.5, rho_red=0.8, rho_blue=0.8):
+    G = nx.complete_graph(m)
+
+    # אתחול צבעים התחלתיים לצמתים הראשונים
+    for i in range(m):
+        color = 'red' if random.random() < r else 'blue'
+        G.nodes[i]['color'] = color
+
+    for i in range(m, n):
+        G.add_node(i)
+
+        # שלב 1: קביעת צבע של הצומת החדש
+        new_color = 'red' if random.random() < r else 'blue'
+        G.nodes[i]['color'] = new_color
+
+        targets = set()
+        while len(targets) < m:
+            # שלב 2: בחירה לפי העדפה (PA) או אקראי
+            degrees = dict(G.degree())
+            total = sum(degrees.values())
+            if total == 0:
+                candidate = random.choice(list(G.nodes()))
+            else:
+                probs = [degrees[node] / total for node in G.nodes()]
+                candidate = random.choices(list(G.nodes()), weights=probs, k=1)[0]
+
+            # שלב 3: סינון לפי צבע
+            candidate_color = G.nodes[candidate]['color']
+            same_color = (candidate_color == new_color)
+
+            if new_color == 'red':
+                accept_prob = rho_red if same_color else (1 - rho_red)
+            else:
+                accept_prob = rho_blue if same_color else (1 - rho_blue)
+
+            if random.random() < accept_prob:
+                targets.add(candidate)
+
+        for target in targets:
+            G.add_edge(i, target)
 
     return G
 
@@ -1072,25 +1125,34 @@ if __name__ == '__main__':
     # Gnm = build_gnm_graph(max_connected_component_graph)
     # draw_Graph(Gnm, "G(n, m) Graph")
 
-    Gpa = build_preferential_attachment_model(max_connected_component_graph)
+    # Gpa = build_preferential_attachment_model(max_connected_component_graph)
     # draw_Graph(Gpa, "preferential attachment model Graph")
 
 
-    plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
-    plot_directed_degree_distributions(Gpa, degree_type='in', title='pa')
-
-    plot_directed_degree_distributions(max_connected_component_graph, degree_type='out', title='max_connected_component_graph')
-    plot_directed_degree_distributions(Gpa, degree_type='out', title='pa')
-
-    plot_directed_degree_distributions(max_connected_component_graph, degree_type='total', title='max_connected_component_graph')
-    plot_directed_degree_distributions(Gpa, degree_type='total', title='pa')
+    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
+    # plot_directed_degree_distributions(Gpa, degree_type='in', title='pa')
+    #
+    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='out', title='max_connected_component_graph')
+    # plot_directed_degree_distributions(Gpa, degree_type='out', title='pa')
+    #
+    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='total', title='max_connected_component_graph')
+    # plot_directed_degree_distributions(Gpa, degree_type='total', title='pa')
     #
     # G_giant = giant_component_directed(Gnm)
     # draw_Graph(G_giant, "G(n, m) Giant component")
     # avg_dist = average_distance_directed(G_giant)
     # print("Average Distance in Giant Component:", avg_dist)
     #
-    # check_powerlaw_builtin(max_connected_component_graph)
+    # check_powerlaw_with_log_binning(max_connected_component_graph)
+
+    n = max_connected_component_graph.number_of_nodes()
+    m = 3
+    alpha = 0.7
+
+    G_mpa = mixed_preferential_attachment_graph(n=n, m=m)
+
+
+    draw_Graph(G_mpa, "G_mpa Giant component")
 
 
 
