@@ -89,6 +89,7 @@ def draw_graph_by_fixed_colors(G, node_colors):
         width=0.8,
         ax=ax
     )
+
     ax.set_title("Bitcoin OTC Trust Graph – Colored by Rating Ranges",
                  fontsize=14, color='black')
     ax.axis("off")
@@ -107,6 +108,7 @@ def draw_graph_by_fixed_colors(G, node_colors):
 
     plt.tight_layout()
     plt.show()
+
 
 
 def build_original_graph():
@@ -1298,6 +1300,7 @@ def ex5():
         return mod
 
     G = build_original_graph()
+
     max_connected_component_graph = build_max_connected_component_graph(G)
 
     max_connected_component_graph = color_by_average_incoming_rating(max_connected_component_graph)
@@ -1352,7 +1355,9 @@ if __name__ == '__main__':
     # plot_directed_degree_distributions(max_connected_component_graph, degree_type='out', title='max_connected_component_graph')
     # plot_directed_degree_distributions(max_connected_component_graph, degree_type='total', title='max_connected_component_graph')
     #
+    # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
     #
+    # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
     #
     # #
     # # node_avg_rating = compute_average_rating(max_connected_component_graph)
