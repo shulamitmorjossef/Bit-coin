@@ -836,8 +836,225 @@ def check_powerlaw_builtin(G):
     plt.tight_layout()
     plt.show()
 
+
+import numpy as np
+import matplotlib.pyplot as plt
+import networkx as nx
+from scipy.optimize import curve_fit
+
+def power_law_func(x, a, b):
+    return b * x**(-a)
+
+def log_binning(degrees, bin_count=30):
+    degrees = np.array(degrees)
+    degrees = degrees[degrees > 0]
+    min_deg = np.min(degrees)
+    max_deg = np.max(degrees)
+
+    bins = np.logspace(np.log10(min_deg), np.log10(max_deg), bin_count)
+    hist, edges = np.histogram(degrees, bins=bins, density=True)
+    bin_centers = (edges[1:] + edges[:-1]) / 2
+
+    valid = hist > 0
+    return bin_centers[valid], hist[valid]
+
+def fit_power_law_with_log_binning(G, degree_type='out', bin_count=30):
+    # שלב 1: דרגות
+    if degree_type == 'out':
+        degrees = [d for _, d in G.out_degree()]
+    elif degree_type == 'in':
+        degrees = [d for _, d in G.in_degree()]
+    else:
+        raise ValueError("degree_type must be 'in' or 'out'")
+
+    # שלב 2: binning לוגריתמי
+    x, y = log_binning(degrees, bin_count=bin_count)
+
+    # שלב 3: התאמת חוק חזקה
+    popt, _ = curve_fit(power_law_func, x, y)
+    alpha, b = popt
+    x_fit = np.linspace(min(x), max(x), 300)
+    y_fit = power_law_func(x_fit, *popt)
+
+    # שלב 4: ציור - קווים בלבד
+    plt.figure(figsize=(8, 6))
+    plt.plot(x, y, color='blue', linewidth=2, label='Log-binned data')  # קו כחול חלק
+    plt.plot(x_fit, y_fit, color='red', linestyle='--',
+             label=f'Fit: $P(k) = {b:.2f} \\cdot k^{{-{alpha:.2f}}}$')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('Degree (log scale)')
+    plt.ylabel('P(Degree) (log scale)')
+    plt.title(f'Power-law fit ({degree_type}-degree)')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    print(f"Alpha: {alpha:.4f}, Coefficient: {b:.4f}")
+
+
+#
+# def plot_raw_degree_distribution(G):
+#
+#     degrees = [d for _, d in G.degree()]
+#
+#     # הגדרת היסטוגרמה רגילה
+#     hist, bin_edges = np.histogram(degrees, bins=range(1, max(degrees) + 2), density=True)
+#     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+#
+#
+#
+#     plt.figure(figsize=(8, 6))
+#     plt.bar(bin_centers, hist, width=0.8, color='orange', edgecolor='black', alpha=0.7)
+#     plt.xscale('log')
+#     plt.yscale('log')
+#     plt.xlabel("Vertex Degree")
+#     plt.ylabel("Probability")
+#     plt.title("Raw Degree Distribution (No Binning)")
+#     plt.grid(True, which='both', linestyle='--', alpha=0.4)
+#     plt.tight_layout()
+#     plt.show()
+#
+#
+# def plot_degree_distribution_log_binning(G, bins=20, show_fit=False):
+#
+#     degrees = [d for _, d in G.degree()]
+#
+#     # הגדרת בינס בלוגריתם
+#     min_deg = max(min(degrees), 1)
+#     max_deg = max(degrees)
+#     log_bins = np.logspace(np.log10(min_deg), np.log10(max_deg), bins)
+#
+#     hist, bin_edges = np.histogram(degrees, bins=log_bins, density=True)
+#     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+#
+#     plt.figure(figsize=(8, 6))
+#     plt.bar(bin_centers, hist, width=np.diff(bin_edges), align='center', alpha=0.7, color='orange', edgecolor='black')
+#     plt.xscale('log')
+#     plt.yscale('log')
+#     plt.xlabel("Vertex Degree")
+#     plt.ylabel("Probability")
+#     plt.title("Log-binned Degree Distribution")
+#
+#     if show_fit:
+#         try:
+#             import powerlaw
+#             fit = powerlaw.Fit(degrees, discrete=True)
+#             alpha = fit.power_law.alpha
+#             xmin = fit.power_law.xmin
+#             x_fit = np.linspace(xmin, max_deg, 100)
+#             C = hist[0] * bin_centers[0] ** alpha  # קבוע נורמליזציה מקורב
+#             y_fit = C * x_fit ** (-alpha)
+#             plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
+#             plt.legend()
+#         except ImportError:
+#             print("כדי להשתמש באופציית fit, יש להתקין את ספריית 'powerlaw'")
+#
+#     plt.grid(True, which='both', linestyle='--', alpha=0.4)
+#     plt.tight_layout()
+#     plt.show()
+
+
 # import matplotlib.pyplot as plt
 # import numpy as np
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plot_raw_degree_distribution(G, show_fit=False):
+    import warnings
+    warnings.filterwarnings("ignore")  # להימנע מהודעות של powerlaw
+
+    degrees = [d for _, d in G.degree()]
+    hist, bin_edges = np.histogram(degrees, bins=range(1, max(degrees) + 2), density=True)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    plt.figure(figsize=(8, 6))
+    plt.bar(bin_centers, hist, width=0.8, color='orange', edgecolor='black', alpha=0.7)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel("Vertex Degree")
+    plt.ylabel("Probability")
+    plt.title("Raw Degree Distribution (No Binning)")
+    plt.grid(True, which='both', linestyle='--', alpha=0.4)
+    print("before")
+    if show_fit:
+        print("show fit")
+        try:
+            print("try")
+            import powerlaw
+            fit = powerlaw.Fit(degrees, discrete=True)
+            alpha = fit.power_law.alpha
+            xmin = fit.power_law.xmin
+            R, p = fit.distribution_compare('power_law', 'lognormal')
+
+            print(f"⚙️ Raw Fit Results:")
+            print(f"  α (power-law exponent): {alpha:.3f}")
+            print(f"  xmin: {xmin}")
+            print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
+
+            x_fit = np.linspace(xmin, max(degrees), 100)
+            C = hist[0] * bin_centers[0] ** alpha
+            y_fit = C * x_fit ** (-alpha)
+            plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
+            plt.legend()
+
+        except ImportError:
+            print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_degree_distribution_log_binning(G, bins=20, show_fit=False):
+    import warnings
+    warnings.filterwarnings("ignore")
+
+    degrees = [d for _, d in G.degree()]
+    min_deg = max(min(degrees), 1)
+    max_deg = max(degrees)
+    log_bins = np.logspace(np.log10(min_deg), np.log10(max_deg), bins)
+
+    hist, bin_edges = np.histogram(degrees, bins=log_bins, density=True)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    plt.figure(figsize=(8, 6))
+    plt.bar(bin_centers, hist, width=np.diff(bin_edges), align='center', alpha=0.7, color='orange', edgecolor='black')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel("Vertex Degree")
+    plt.ylabel("Probability")
+    plt.title("Log-binned Degree Distribution")
+    plt.grid(True, which='both', linestyle='--', alpha=0.4)
+
+    if show_fit:
+        try:
+            import powerlaw
+            fit = powerlaw.Fit(degrees, discrete=True)
+            alpha = fit.power_law.alpha
+            xmin = fit.power_law.xmin
+            R, p = fit.distribution_compare('power_law', 'lognormal')
+
+            print(f"⚙️ Log-Binned Fit Results:")
+            print(f"  α (power-law exponent): {alpha:.3f}")
+            print(f"  xmin: {xmin}")
+            print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
+
+            x_fit = np.linspace(xmin, max_deg, 100)
+            C = hist[0] * bin_centers[0] ** alpha
+            y_fit = C * x_fit ** (-alpha)
+            plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
+            plt.legend()
+
+        except ImportError:
+            print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
+
+    plt.tight_layout()
+    plt.show()
+
+
+
 
 def plot_directed_degree_distributions(G, degree_type='in', title=' '):
     """
@@ -1350,11 +1567,11 @@ def ex5():
 
 if __name__ == '__main__':
 
-    ex5()
+    # ex5()
     #
-    # G = build_original_graph()
+    G = build_original_graph()
     # #
-    # max_connected_component_graph = build_max_connected_component_graph(G)
+    max_connected_component_graph = build_max_connected_component_graph(G)
     # # #
     # node_avg_rating = compute_average_rating(max_connected_component_graph)
     # # #
@@ -1437,4 +1654,16 @@ if __name__ == '__main__':
     # avg_dist = average_distance_directed(G_giant)
     # print("Average Distance in Giant Component:", avg_dist)
     #
+
+
+
     # check_powerlaw_builtin(max_connected_component_graph)
+    #
+    # fit_power_law_with_log_binning(max_connected_component_graph)
+
+    plot_raw_degree_distribution(max_connected_component_graph, show_fit=True)
+
+
+    plot_degree_distribution_log_binning(max_connected_component_graph, bins=30, show_fit=True)
+
+    # noa(max_connected_component_graph)
