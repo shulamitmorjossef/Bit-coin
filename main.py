@@ -1348,13 +1348,69 @@ def ex5():
     plot_degree_distribution_by_color(G_mpa, color='blue', degree_type='out', title='Mixed Preferential Attachment')
 
 
+
+
+def FIX_OVERLAP(G, title, filename):
+
+    import matplotlib.pyplot as plt
+    from scipy.stats import linregress
+    import numpy as np
+    from collections import defaultdict
+
+
+
+    def plot_neighborhood_overlapNEW(G, title, filename):
+        overlaps, weights = calculate_neighborhood_overlap(G)
+
+        # צבירת overlaps לכל ערך weight ייחודי
+        weight_to_overlaps = defaultdict(list)
+        for w, o in zip(weights, overlaps):
+            weight_to_overlaps[w].append(o)
+
+        # חישוב ממוצע לכל משקל
+        unique_weights = sorted(weight_to_overlaps.keys())
+        avg_overlaps = [np.mean(weight_to_overlaps[w]) for w in unique_weights]
+
+        # חישוב קו מגמה
+        slope, intercept, _, _, _ = linregress(unique_weights, avg_overlaps)
+        trend_y = [slope * w + intercept for w in unique_weights]
+
+        # ציור
+        plt.style.use('default')
+        plt.figure(figsize=(10, 6), facecolor='white')
+        ax = plt.gca()
+        ax.set_facecolor('white')
+
+        # ציור נקודה אחת לכל ערך weight
+        plt.scatter(unique_weights, avg_overlaps, alpha=0.8, color='blue',
+                    edgecolors='green', linewidths=0.3, label='Avg Overlap per Weight')
+
+        # קו מגמה
+        plt.plot(unique_weights, trend_y, linestyle='--', color='red', linewidth=2, label='Trend Line')
+
+        plt.title(title, fontsize=14, weight='bold', color='black')
+        plt.xlabel("Weight", fontsize=12, color='black')
+        plt.ylabel("Average Overlap", fontsize=12, color='black')
+        plt.xticks(color='black')
+        plt.yticks(color='black')
+        plt.grid(True, linestyle='--', alpha=0.6)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(filename, dpi=300)
+        plt.show()
+
+    plot_neighborhood_overlapNEW(G, title, filename)
+
+
+
+
 if __name__ == '__main__':
 
-    ex5()
+    # ex5()
     #
-    # G = build_original_graph()
+    G = build_original_graph()
     # #
-    # max_connected_component_graph = build_max_connected_component_graph(G)
+    max_connected_component_graph = build_max_connected_component_graph(G)
     # # #
     # node_avg_rating = compute_average_rating(max_connected_component_graph)
     # # #
@@ -1410,7 +1466,9 @@ if __name__ == '__main__':
     #
     # # create_orders_and_draw(G)
     #
-    # # plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    FIX_OVERLAP(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+
     #
     # # gilber model G(n,m)
     #
