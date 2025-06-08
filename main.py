@@ -959,9 +959,8 @@ def fit_power_law_with_log_binning(G, degree_type='out', bin_count=30):
 # import matplotlib.pyplot as plt
 # import numpy as np
 
-import numpy as np
-import matplotlib.pyplot as plt
 
+# power law
 def plot_raw_degree_distribution(G, show_fit=False):
     import warnings
     warnings.filterwarnings("ignore")  # להימנע מהודעות של powerlaw
@@ -1005,7 +1004,6 @@ def plot_raw_degree_distribution(G, show_fit=False):
 
     plt.tight_layout()
     plt.show()
-
 
 def plot_degree_distribution_log_binning(G, bins=20, show_fit=False):
     import warnings
@@ -1243,6 +1241,7 @@ def ex5():
         reds = [n for n, c in colors.items() if c == 'red']
         blues = [n for n, c in colors.items() if c == 'blue']
         r = len(reds) / G.number_of_nodes()
+        print(f'r = {r}' )
 
         same_red_edges = 0
         total_red_edges = 0
@@ -1537,6 +1536,124 @@ def ex5():
 
         return mod
 
+    def plot_raw_degree_distribution(G, show_fit=False, color_filter=None):
+        import warnings
+        warnings.filterwarnings("ignore")
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        # סינון לפי צבע אם נבחר
+        if color_filter:
+            nodes = [n for n, data in G.nodes(data=True) if data.get('color') == color_filter]
+            degrees = [G.degree(n) for n in nodes]
+        else:
+            degrees = [d for _, d in G.degree()]
+
+        if not degrees:
+            print(f"❌ No nodes with color '{color_filter}' found.")
+            return
+
+        hist, bin_edges = np.histogram(degrees, bins=range(1, max(degrees) + 2), density=True)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        plt.figure(figsize=(8, 6))
+        plt.bar(bin_centers, hist, width=0.8, color='orange', edgecolor='black', alpha=0.7)
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel("Vertex Degree")
+        plt.ylabel("Probability")
+        title = f"Raw Degree Distribution"
+        if color_filter:
+            title += f" (Color: {color_filter})"
+        plt.title(title)
+        plt.grid(True, which='both', linestyle='--', alpha=0.4)
+
+        if show_fit:
+            try:
+                import powerlaw
+                fit = powerlaw.Fit(degrees, discrete=True)
+                alpha = fit.power_law.alpha
+                xmin = fit.power_law.xmin
+                R, p = fit.distribution_compare('power_law', 'lognormal')
+
+                print(f"⚙️ Raw Fit Results:")
+                print(f"  α (power-law exponent): {alpha:.3f}")
+                print(f"  xmin: {xmin}")
+                print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
+
+                x_fit = np.linspace(xmin, max(degrees), 100)
+                C = hist[0] * bin_centers[0] ** alpha
+                y_fit = C * x_fit ** (-alpha)
+                # plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
+                plt.legend()
+
+            except ImportError:
+                print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
+
+        plt.tight_layout()
+        plt.show()
+
+    def plot_degree_distribution_log_binning(G, bins=20, show_fit=False, color_filter=None):
+        import warnings
+        warnings.filterwarnings("ignore")
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        if color_filter:
+            nodes = [n for n, data in G.nodes(data=True) if data.get('color') == color_filter]
+            degrees = [G.degree(n) for n in nodes]
+        else:
+            degrees = [d for _, d in G.degree()]
+
+        if not degrees:
+            print(f"❌ No nodes with color '{color_filter}' found.")
+            return
+
+        min_deg = max(min(degrees), 1)
+        max_deg = max(degrees)
+        log_bins = np.logspace(np.log10(min_deg), np.log10(max_deg), bins)
+
+        hist, bin_edges = np.histogram(degrees, bins=log_bins, density=True)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        plt.figure(figsize=(8, 6))
+        plt.bar(bin_centers, hist, width=np.diff(bin_edges), align='center', alpha=0.7, color='orange',
+                edgecolor='black')
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel("Vertex Degree")
+        plt.ylabel("Probability")
+        title = "Log-binned Degree Distribution"
+        if color_filter:
+            title += f" (Color: {color_filter})"
+        plt.title(title)
+        plt.grid(True, which='both', linestyle='--', alpha=0.4)
+
+        if show_fit:
+            try:
+                import powerlaw
+                fit = powerlaw.Fit(degrees, discrete=True)
+                alpha = fit.power_law.alpha
+                xmin = fit.power_law.xmin
+                R, p = fit.distribution_compare('power_law', 'lognormal')
+
+                print(f"⚙️ Log-Binned Fit Results:")
+                print(f"  α (power-law exponent): {alpha:.3f}")
+                print(f"  xmin: {xmin}")
+                print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
+
+                x_fit = np.linspace(xmin, max_deg, 100)
+                C = hist[0] * bin_centers[0] ** alpha
+                y_fit = C * x_fit ** (-alpha)
+                # plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
+                plt.legend()
+
+            except ImportError:
+                print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
+
+        plt.tight_layout()
+        plt.show()
+
     G = build_original_graph()
 
     max_connected_component_graph = build_max_connected_component_graph(G)
@@ -1554,16 +1671,26 @@ def ex5():
     # draw_Graph(max_connected_component_graph, "Original Graph")
     # draw_Graph(G_mpa, "Mixed Preferential Attachment")
 
-    plot_degree_distribution_by_color(max_connected_component_graph, color='red', degree_type='in',title='Original Graph')
-    plot_degree_distribution_by_color(max_connected_component_graph, color='blue', degree_type='in',title='Original Graph')
-    plot_degree_distribution_by_color(max_connected_component_graph, color='red', degree_type='out',title='Original Graph')
-    plot_degree_distribution_by_color(max_connected_component_graph, color='blue', degree_type='out',title='Original Graph')
+    # plot_degree_distribution_by_color(max_connected_component_graph, color='red', degree_type='in',title='Original Graph')
+    # plot_degree_distribution_by_color(max_connected_component_graph, color='blue', degree_type='in',title='Original Graph')
+    # plot_degree_distribution_by_color(max_connected_component_graph, color='red', degree_type='out',title='Original Graph')
+    # plot_degree_distribution_by_color(max_connected_component_graph, color='blue', degree_type='out',title='Original Graph')
+    #
+    # plot_degree_distribution_by_color(G_mpa, color='red', degree_type='in', title='Mixed Preferential Attachment')
+    # plot_degree_distribution_by_color(G_mpa, color='blue', degree_type='in', title='Mixed Preferential Attachment')
+    # plot_degree_distribution_by_color(G_mpa, color='red', degree_type='out', title='Mixed Preferential Attachment')
+    # plot_degree_distribution_by_color(G_mpa, color='blue', degree_type='out', title='Mixed Preferential Attachment')
 
-    plot_degree_distribution_by_color(G_mpa, color='red', degree_type='in', title='Mixed Preferential Attachment')
-    plot_degree_distribution_by_color(G_mpa, color='blue', degree_type='in', title='Mixed Preferential Attachment')
-    plot_degree_distribution_by_color(G_mpa, color='red', degree_type='out', title='Mixed Preferential Attachment')
-    plot_degree_distribution_by_color(G_mpa, color='blue', degree_type='out', title='Mixed Preferential Attachment')
+    plot_raw_degree_distribution(max_connected_component_graph, show_fit=True, color_filter='red')
+    plot_degree_distribution_log_binning(max_connected_component_graph, bins=20, show_fit=True, color_filter='red')
+    plot_raw_degree_distribution(G_mpa, show_fit=True, color_filter='red')
+    plot_degree_distribution_log_binning(G_mpa, bins=20, show_fit=True, color_filter='red')
 
+
+    plot_raw_degree_distribution(max_connected_component_graph, show_fit=True, color_filter='blue')
+    plot_degree_distribution_log_binning(max_connected_component_graph, bins=20, show_fit=True, color_filter='blue')
+    plot_raw_degree_distribution(G_mpa, show_fit=True, color_filter='blue')
+    plot_degree_distribution_log_binning(G_mpa, bins=20, show_fit=True, color_filter='blue')
 
 
 
@@ -1623,11 +1750,11 @@ def FIX_OVERLAP(G, title, filename):
 
 if __name__ == '__main__':
 
-    # ex5()
+    ex5()
     #
-    G = build_original_graph()
+    # G = build_original_graph()
     # #
-    max_connected_component_graph = build_max_connected_component_graph(G)
+    # max_connected_component_graph = build_max_connected_component_graph(G)
     # # #
     # node_avg_rating = compute_average_rating(max_connected_component_graph)
     # # #
@@ -1683,8 +1810,8 @@ if __name__ == '__main__':
     #
     # # create_orders_and_draw(G)
     #
-    FIX_OVERLAP(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
-    plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    # FIX_OVERLAP(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    # plot_neighborhood_overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
 
     #
     # # gilber model G(n,m)
@@ -1719,9 +1846,9 @@ if __name__ == '__main__':
     #
     # fit_power_law_with_log_binning(max_connected_component_graph)
 
-    plot_raw_degree_distribution(max_connected_component_graph, show_fit=True)
-
-
-    plot_degree_distribution_log_binning(max_connected_component_graph, bins=30, show_fit=True)
+    # plot_raw_degree_distribution(max_connected_component_graph, show_fit=True)
+    #
+    #
+    # plot_degree_distribution_log_binning(max_connected_component_graph, bins=30, show_fit=True)
 
     # noa(max_connected_component_graph)
