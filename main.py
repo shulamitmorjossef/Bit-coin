@@ -1071,6 +1071,25 @@ def giant_component_directed(G):
 
     return giant_subgraph
 
+def giant_component_weakly_directed(G):
+    """
+    מחשבת את הרכיב הקשיר החלש הגדול ביותר בגרף מכוון.
+
+    Parameters:
+    - G: nx.DiGraph
+
+    Returns:
+    - תת-גרף של הרכיב הקשיר החלש הגדול ביותר
+    """
+    components = list(nx.weakly_connected_components(G))
+    giant_component = max(components, key=len)
+    giant_subgraph = G.subgraph(giant_component).copy()
+
+    print("giant_component (weakly connected): Nodes =", giant_subgraph.number_of_nodes())
+    print("giant_component (weakly connected): Edges =", giant_subgraph.number_of_edges())
+
+    return giant_subgraph
+
 def average_distance_directed(G):
     """
     מחשבת את מרחק המסלול הקצר הממוצע בגרף מכוון.
@@ -1177,6 +1196,7 @@ def build_preferential_attachment_model(original_graph, seed=None):
     print(f"Chosen m value: {m}")
 
     return G
+
 
 def ex5():
 
@@ -1570,9 +1590,6 @@ def FIX_OVERLAP(G, title, filename):
 
     plot_neighborhood_overlapNEW(G, title, filename)
 
-
-
-
 def FIX_CENTARITY_CLOSS_BET_NEW(G):
     import networkx as nx
     import matplotlib.pyplot as plt
@@ -1605,7 +1622,6 @@ def FIX_CENTARITY_CLOSS_BET_NEW(G):
     plt.tight_layout()
     plt.show()
 
-
 def FIX_CENTARITY_CLOSS_BET_OLD(centrality, label):
 
 
@@ -1635,19 +1651,14 @@ def FIX_CENTARITY_CLOSS_BET_OLD(centrality, label):
 
 if __name__ == '__main__':
 
-    ex5()
-    #
-    # G = build_original_graph()
-    # #
-    # max_connected_component_graph = build_max_connected_component_graph(G)
-    # # #
+    # ex5()
+
     G = build_original_graph()
-    # node_avg_ratingG = compute_average_rating(G)
-    # node_colors_fixedG = compute_fixed_colors_by_ranges(G, node_avg_ratingG)
-    # draw_graph_by_fixed_colors(G, node_colors_fixedG)
-
-
     max_connected_component_graph = build_max_connected_component_graph(G)
+    # draw_Graph(max_connected_component_graph, "max")
+    #
+    # G_giant = giant_component_directed(max_connected_component_graph)
+    # draw_Graph(G_giant, "max Giant component")
     # node_avg_rating = compute_average_rating(max_connected_component_graph)
     # node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
     # draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
@@ -1713,7 +1724,7 @@ if __name__ == '__main__':
     # print("PA Number of nodes:", Gpa.number_of_nodes())
     # print("PA Number of edges:", Gpa.number_of_edges())
 
-    draw_Graph(Gpa, "preferential attachment model Graph")
+    # draw_Graph(Gpa, "preferential attachment model Graph")
     #
     #
     # # plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
@@ -1729,8 +1740,13 @@ if __name__ == '__main__':
     # plot_directed_degree_distributions(Gpa, degree_type='total', title='pa')
     #
     G_giant = giant_component_directed(Gpa)
-    draw_Graph(G_giant, "Gpa Giant component")
+    # draw_Graph(G_giant, "Gpa Giant component")
+    gw = giant_component_weakly_directed(Gpa)
+    # draw_Graph(gw, "Gpa Giant component weakly directed")
+
     avg_dist = average_distance_directed(G_giant)
+    avg_dist = average_distance_directed(gw)
+
     print("Average Distance in Giant Component:", avg_dist)
     #
 
