@@ -20,10 +20,10 @@ def compute_fixed_colors_by_ranges(G, node_avg_rating):
     colors = []
     for node in G.nodes():
         avg = node_avg_rating.get(node, 0)
-        if avg >= 2:
+        if avg <= -2:
             colors.append('#0000FF')  # כחול
-        # elif avg > 2:
-        #     colors.append('#FFFF00')  # צהוב
+        elif avg > -2 and avg < 2:
+            colors.append('#FFFF00')  # צהוב
         else:
             colors.append('#FF0000')  # אדום
     return colors
@@ -82,7 +82,7 @@ def draw_graph_by_fixed_colors(G, node_colors):
     nx.draw_networkx_edges(
         G,
         pos,
-        edge_color='gray',
+        edge_color='black',
         alpha=0.3,
         arrows=True,  # חובה להוסיף אם רוצים חיצים!
         arrowsize=10,  # גודל החץ
@@ -96,9 +96,9 @@ def draw_graph_by_fixed_colors(G, node_colors):
 
     # מקרא חדש
     legend_labels = {
-        '#0000FF': '>= 2',  # כחול כהה
-        '#FF0000': '< 2',   # אדום
-        # '#FFFF00': '> 2'    # צהוב
+        '#0000FF': '<= -2',  # כחול כהה
+        '#FFFF00': '-2 < and < 2 and ',   # אדום
+        '#FF0000': '>= 2'    # צהוב
     }
 
     for color, label in legend_labels.items():
@@ -255,43 +255,6 @@ def plot_rating_histogram(node_avg_rating):
 #             colors.append('#d32f7f')  # ורוד-סגול
 #     return colors
 
-# def draw_graph_by_fixed_colors(G, node_colors):
-#     plt.style.use('dark_background')
-#     pos = nx.spring_layout(G, seed=42)
-#
-#     fig, ax = plt.subplots(figsize=(10, 8), facecolor='black')
-#
-#     # צביעת הקודקודים לפי הצבעים שנבחרו
-#     nx.draw_networkx_nodes(
-#         G, pos, node_color=node_colors,
-#         node_size=40, ax=ax
-#     )
-#
-#     # צביעת הקשתות
-#     nx.draw_networkx_edges(
-#         G, pos, edge_color='#20b2aa',
-#         alpha=0.4, arrows=False, ax=ax
-#     )
-#
-#     # כותרת
-#     ax.set_title("Bitcoin OTC Trust Graph – Colored by Rating Ranges",
-#                  fontsize=14, color='white')
-#     ax.axis("off")
-#
-#     # יצירת מקרא
-#     legend_labels = {
-#         '#9b4d96': '< -2',  # סגול כהה
-#         '#d32f7f': '= 2',  # ורוד-סגול
-#         '#ffb6c1': '> 2'  # ורוד בהיר (לבן/ורדרד)
-#     }
-#
-#     for color, label in legend_labels.items():
-#         ax.scatter([], [], c=color, label=label, s=40)
-#
-#     ax.legend(frameon=False, labelcolor='white')
-#
-#     plt.tight_layout()
-#     plt.show()
 
 def degree_histogram(G):
     # אוסף את דרגות הקלט והפלט
@@ -959,8 +922,9 @@ def fit_power_law_with_log_binning(G, degree_type='out', bin_count=30):
 # import matplotlib.pyplot as plt
 # import numpy as np
 
+import numpy as np
+import matplotlib.pyplot as plt
 
-# power law
 def plot_raw_degree_distribution(G, show_fit=False):
     import warnings
     warnings.filterwarnings("ignore")  # להימנע מהודעות של powerlaw
@@ -1081,26 +1045,6 @@ def plot_directed_degree_distributions(G, degree_type='in', title=' '):
     max_deg = max(degrees)
     bins = np.arange(1, max_deg + 2) - 0.5  # integer bins
 
-    # 1. Regular histogram
-    # plt.figure(figsize=(8, 5))
-    # plt.hist(degrees, bins=bins, color='skyblue', edgecolor='black')
-    # plt.xlabel(label)
-    # plt.ylabel('Frequency')
-    # plt.title(f'{label} Distribution (Regular)')
-    # plt.grid(True, linestyle='--', alpha=0.5)
-    # plt.tight_layout()
-    # plt.show()
-    #
-    # # 2. Normalized histogram
-    # plt.figure(figsize=(8, 5))
-    # plt.hist(degrees, bins=bins, density=True, color='lightgreen', edgecolor='black')
-    # plt.xlabel(label)
-    # plt.ylabel('Probability Density')
-    # plt.title(f'{label} Distribution (Normalized)')
-    # plt.grid(True, linestyle='--', alpha=0.5)
-    # plt.tight_layout()
-    # plt.show()
-
     # 3. Log-X histogram
     plt.figure(figsize=(8, 5))
     plt.hist(degrees, bins=bins, color='salmon', edgecolor='black')
@@ -1191,8 +1135,8 @@ def build_preferential_attachment_model(original_graph, seed=None):
     m_total = original_graph.number_of_edges()
 
     # Estimate m: average out-degree (can be rounded down to avoid over-connectivity)
-    m = max(1, int(m_total / n))
-
+    # m = max(1, int(m_total / n))
+    m = 5
     G = nx.DiGraph()
 
     # Start with m isolated nodes
@@ -1241,7 +1185,6 @@ def ex5():
         reds = [n for n, c in colors.items() if c == 'red']
         blues = [n for n, c in colors.items() if c == 'blue']
         r = len(reds) / G.number_of_nodes()
-        print(f'r = {r}' )
 
         same_red_edges = 0
         total_red_edges = 0
@@ -1536,124 +1479,6 @@ def ex5():
 
         return mod
 
-    def plot_raw_degree_distribution(G, show_fit=False, color_filter=None):
-        import warnings
-        warnings.filterwarnings("ignore")
-        import matplotlib.pyplot as plt
-        import numpy as np
-
-        # סינון לפי צבע אם נבחר
-        if color_filter:
-            nodes = [n for n, data in G.nodes(data=True) if data.get('color') == color_filter]
-            degrees = [G.degree(n) for n in nodes]
-        else:
-            degrees = [d for _, d in G.degree()]
-
-        if not degrees:
-            print(f"❌ No nodes with color '{color_filter}' found.")
-            return
-
-        hist, bin_edges = np.histogram(degrees, bins=range(1, max(degrees) + 2), density=True)
-        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-
-        plt.figure(figsize=(8, 6))
-        plt.bar(bin_centers, hist, width=0.8, color='orange', edgecolor='black', alpha=0.7)
-        plt.xscale('log')
-        plt.yscale('log')
-        plt.xlabel("Vertex Degree")
-        plt.ylabel("Probability")
-        title = f"Raw Degree Distribution"
-        if color_filter:
-            title += f" (Color: {color_filter})"
-        plt.title(title)
-        plt.grid(True, which='both', linestyle='--', alpha=0.4)
-
-        if show_fit:
-            try:
-                import powerlaw
-                fit = powerlaw.Fit(degrees, discrete=True)
-                alpha = fit.power_law.alpha
-                xmin = fit.power_law.xmin
-                R, p = fit.distribution_compare('power_law', 'lognormal')
-
-                print(f"⚙️ Raw Fit Results:")
-                print(f"  α (power-law exponent): {alpha:.3f}")
-                print(f"  xmin: {xmin}")
-                print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
-
-                x_fit = np.linspace(xmin, max(degrees), 100)
-                C = hist[0] * bin_centers[0] ** alpha
-                y_fit = C * x_fit ** (-alpha)
-                # plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
-                plt.legend()
-
-            except ImportError:
-                print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
-
-        plt.tight_layout()
-        plt.show()
-
-    def plot_degree_distribution_log_binning(G, bins=20, show_fit=False, color_filter=None):
-        import warnings
-        warnings.filterwarnings("ignore")
-        import matplotlib.pyplot as plt
-        import numpy as np
-
-        if color_filter:
-            nodes = [n for n, data in G.nodes(data=True) if data.get('color') == color_filter]
-            degrees = [G.degree(n) for n in nodes]
-        else:
-            degrees = [d for _, d in G.degree()]
-
-        if not degrees:
-            print(f"❌ No nodes with color '{color_filter}' found.")
-            return
-
-        min_deg = max(min(degrees), 1)
-        max_deg = max(degrees)
-        log_bins = np.logspace(np.log10(min_deg), np.log10(max_deg), bins)
-
-        hist, bin_edges = np.histogram(degrees, bins=log_bins, density=True)
-        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-
-        plt.figure(figsize=(8, 6))
-        plt.bar(bin_centers, hist, width=np.diff(bin_edges), align='center', alpha=0.7, color='orange',
-                edgecolor='black')
-        plt.xscale('log')
-        plt.yscale('log')
-        plt.xlabel("Vertex Degree")
-        plt.ylabel("Probability")
-        title = "Log-binned Degree Distribution"
-        if color_filter:
-            title += f" (Color: {color_filter})"
-        plt.title(title)
-        plt.grid(True, which='both', linestyle='--', alpha=0.4)
-
-        if show_fit:
-            try:
-                import powerlaw
-                fit = powerlaw.Fit(degrees, discrete=True)
-                alpha = fit.power_law.alpha
-                xmin = fit.power_law.xmin
-                R, p = fit.distribution_compare('power_law', 'lognormal')
-
-                print(f"⚙️ Log-Binned Fit Results:")
-                print(f"  α (power-law exponent): {alpha:.3f}")
-                print(f"  xmin: {xmin}")
-                print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
-
-                x_fit = np.linspace(xmin, max_deg, 100)
-                C = hist[0] * bin_centers[0] ** alpha
-                y_fit = C * x_fit ** (-alpha)
-                # plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
-                plt.legend()
-
-            except ImportError:
-                print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
-
-        plt.tight_layout()
-        plt.show()
-
     G = build_original_graph()
 
     max_connected_component_graph = build_max_connected_component_graph(G)
@@ -1748,6 +1573,66 @@ def FIX_OVERLAP(G, title, filename):
 
 
 
+def FIX_CENTARITY_CLOSS_BET_NEW(G):
+    import networkx as nx
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    def compute_closeness_centrality(G):
+        return nx.closeness_centrality(G)
+
+    # גרף לדוגמה
+    G = nx.erdos_renyi_graph(10000, 0.001)
+    centrality = compute_closeness_centrality(G)
+
+    values = np.array(list(centrality.values()))
+    values = values[values > 0]  # כדי להימנע מלוג של 0
+
+    # בוחרים חזקות לבינים
+    min_exp = -4  # לדוגמה: 10^-4
+    max_exp = 0  # עד 10^0
+    bins = np.logspace(min_exp, max_exp, num=20)  # בינים לוגריתמיים
+
+    # ציור ההיסטוגרמה
+    plt.figure(figsize=(12, 6), facecolor='black')
+    plt.hist(values, bins=bins, color='blueviolet', edgecolor='cyan')
+    plt.xscale('log')
+    plt.xlabel("Closeness Centrality (log scale)", color='white')
+    plt.ylabel("Number of Nodes", color='white')
+    plt.title("Distribution of Closeness Centrality", color='white')
+    plt.tick_params(colors='white')
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+
+def FIX_CENTARITY_CLOSS_BET_OLD(centrality, label):
+
+
+    def plot_centrality(centrality, label):
+        plt.style.use('dark_background')
+
+        plt.figure(figsize=(8, 6), facecolor='black')
+        ax = plt.gca()
+        ax.set_facecolor('black')
+
+        plt.hist(centrality.values(), bins=20, color='#6246dc', edgecolor='cyan')
+
+        # שינוי סקלת ציר ה-X ללוגריתמית
+        ax.set_xscale('log')
+
+        plt.title(f'{label} Centrality Distribution', fontsize=14, color='white')
+        plt.xlabel(f'{label} Centrality', color='white')
+        plt.ylabel("Number of Nodes", color='white')
+        plt.xticks(color='white')
+        plt.yticks(color='white')
+
+        plt.tight_layout()
+        plt.show()
+
+    plot_centrality(centrality, label)
+
+
 if __name__ == '__main__':
 
     ex5()
@@ -1756,9 +1641,17 @@ if __name__ == '__main__':
     # #
     # max_connected_component_graph = build_max_connected_component_graph(G)
     # # #
+    G = build_original_graph()
+    # node_avg_ratingG = compute_average_rating(G)
+    # node_colors_fixedG = compute_fixed_colors_by_ranges(G, node_avg_ratingG)
+    # draw_graph_by_fixed_colors(G, node_colors_fixedG)
+
+
+    max_connected_component_graph = build_max_connected_component_graph(G)
     # node_avg_rating = compute_average_rating(max_connected_component_graph)
-    # # #
     # node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
+    # draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
+
     # # #
     # # plot_rating_histogram(node_avg_rating)
     # # #
@@ -1766,7 +1659,7 @@ if __name__ == '__main__':
     # # #
     # # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
     # # #
-    # draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
+
     #
     #
     # plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
@@ -1775,8 +1668,6 @@ if __name__ == '__main__':
     #
     # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
     #
-    # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
-    #
     # #
     # # node_avg_rating = compute_average_rating(max_connected_component_graph)
     # #
@@ -1784,21 +1675,20 @@ if __name__ == '__main__':
     # #
     # # node_colors = compute_node_colors(node_avg_rating, max_connected_component_graph, min_rating, max_rating)
     # #
-    # # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
+    # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
+    #
+    # compute_and_plot_smoothed_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
     # #
-    # # compute_and_plot_smoothed_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
     # #
-    # # normalized_in, normalized_out = degree_histogram(max_connected_component_graph)
-    # #
-    # # draw_degree_histogram(normalized_in, normalized_out)
-    # #
-    # # plot_normalized_degree_distributions_fixed(max_connected_component_graph)
     # #
     # # compute_and_plot_degree_centrality(*compute_degree_centrality(max_connected_component_graph))
     # #
-    # # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
-    # #
-    # # plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+    # plot_centrality(compute_closeness_centrality(max_connected_component_graph), "closeness")
+    # FIX_CENTARITY_CLOSS_BET_OLD(compute_closeness_centrality(max_connected_component_graph), "closeness")
+    # FIX_CENTARITY_CLOSS_BET_NEW(max_connected_component_graph)
+    #
+    # plot_centrality(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
+    # FIX_CENTARITY_CLOSS_BET_OLD(compute_betweenness_centrality(max_connected_component_graph), "betweeness")
     # #
     # # compare_centrality(max_connected_component_grapSh)
     # #
@@ -1819,13 +1709,17 @@ if __name__ == '__main__':
     # # Gnm = build_gnm_graph(max_connected_component_graph)
     # # draw_Graph(Gnm, "G(n, m) Graph")
     #
-    # Gpa = build_preferential_attachment_model(max_connected_component_graph)
-    # draw_Graph(Gpa, "preferential attachment model Graph")
+    Gpa = build_preferential_attachment_model(max_connected_component_graph)
+    # print("PA Number of nodes:", Gpa.number_of_nodes())
+    # print("PA Number of edges:", Gpa.number_of_edges())
+
+    draw_Graph(Gpa, "preferential attachment model Graph")
     #
     #
     # # plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
-    # plot_directed_degree_distributions(Gpa, degree_type='in', title='pa')
-    # plot_directed_degree_distributions(Gpa, degree_type='out', title='pa')
+    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
+    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='out', title='max_connected_component_graph')
+    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='total', title='max_connected_component_graph')
     #
     #
     # # plot_directed_degree_distributions(max_connected_component_graph, degree_type='out', title='max_connected_component_graph')
@@ -1834,10 +1728,10 @@ if __name__ == '__main__':
     # # plot_directed_degree_distributions(max_connected_component_graph, degree_type='total', title='max_connected_component_graph')
     # plot_directed_degree_distributions(Gpa, degree_type='total', title='pa')
     #
-    # G_giant = giant_component_directed(Gnm)
-    # draw_Graph(G_giant, "G(n, m) Giant component")
-    # avg_dist = average_distance_directed(G_giant)
-    # print("Average Distance in Giant Component:", avg_dist)
+    G_giant = giant_component_directed(Gpa)
+    draw_Graph(G_giant, "Gpa Giant component")
+    avg_dist = average_distance_directed(G_giant)
+    print("Average Distance in Giant Component:", avg_dist)
     #
 
 
@@ -1846,6 +1740,10 @@ if __name__ == '__main__':
     #
     # fit_power_law_with_log_binning(max_connected_component_graph)
 
+    # plot_raw_degree_distribution(max_connected_component_graph, show_fit=True)
+
+
+    # plot_degree_distribution_log_binning(max_connected_component_graph, bins=30, show_fit=True)
     # plot_raw_degree_distribution(max_connected_component_graph, show_fit=True)
     #
     #
