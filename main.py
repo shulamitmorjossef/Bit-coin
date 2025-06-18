@@ -136,7 +136,6 @@ def min_max_rating(G):
 
     node_avg_rating = compute_average_rating(G)
 
-
     # Normalize ratings for color mapping
     min_rating = min(node_avg_rating.values())
     max_rating = max(node_avg_rating.values())
@@ -702,6 +701,29 @@ def create_orders_and_draw(G):
     plt.tight_layout()
     plt.show()
 
+def calculate_symmetric_edge_percentage(G):
+    if not G.is_directed():
+        raise ValueError("Graph must be directed.")
+
+    total_edges = G.number_of_edges()
+    symmetric_edges = 0
+
+    visited = set()
+
+    for u, v, data in G.edges(data=True):
+        if (u, v) in visited or (v, u) in visited:
+            continue  # Avoid counting the same pair twice
+        if G.has_edge(v, u):
+            weight_uv = data.get('weight')
+            weight_vu = G[v][u].get('weight')
+            if weight_uv == weight_vu:
+                symmetric_edges += 2  # Count both (u,v) and (v,u)
+        visited.add((u, v))
+        visited.add((v, u))
+
+    percentage = (symmetric_edges / total_edges) * 100 if total_edges > 0 else 0
+    print(f"Percentage of symmetric edges with identical weight: {percentage:.2f}% ({symmetric_edges} out of {total_edges})")
+    return percentage
 
 # -----------------------------------------------------------------
 # draw 3 graphes - 3 colores
@@ -764,14 +786,15 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
+    # min_rating, max_rating = min_max_rating(max_connected_component_graph)
+    # print("min rating: ", min_rating, "\nmax rating: ", min_rating)
+
     # centrality(max_connected_component_graph)
 
     # power_law_no_binning(max_connected_component_graph, show_fit=True)
-    #
     # power_law_binning_logarithm(max_connected_component_graph, bins=20, show_fit=True)
 
     # draw_graph(max_connected_component_graph)
-    # min_rating, max_rating = min_max_rating(max_connected_component_graph)
 
     # draw_rating_histogram(max_connected_component_graph)
 
@@ -784,14 +807,15 @@ if __name__ == '__main__':
     # small_world(max_connected_component_graph)
     # overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
 
+    # avg_dist = average_distance_directed(max_connected_component_graph)
+
     # run for ever
     # create_orders_and_draw(G)
-    #
-    # avg_dist = average_distance_directed(max_connected_component_graph)
-    #
     # calculate_directed_triangle_percentage(max_connected_component_graph)
 
 
     # ----------------------------------------------------------
 
+
+    calculate_symmetric_edge_percentage(max_connected_component_graph)
     # split_graph_by_color(max_connected_component_graph)
