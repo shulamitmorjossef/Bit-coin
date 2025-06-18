@@ -1569,32 +1569,31 @@ def FIX_CENTARITY_CLOSS_BET_NEW(G):
     import matplotlib.pyplot as plt
     import numpy as np
 
-    def compute_closeness_centrality(G):
-        return nx.closeness_centrality(G)
+    def compute_and_plot_centrality(G, centrality_func, title):
+        centrality = centrality_func(G)
+        values = np.array(list(centrality.values()))
+        values = values[values > 0]  # כדי להימנע מלוג של 0
 
-    # גרף לדוגמה
-    G = nx.erdos_renyi_graph(10000, 0.001)
-    centrality = compute_closeness_centrality(G)
+        # תחום הבינים בלוגריתם
+        min_exp = -4
+        max_exp = 0
+        bins = np.logspace(min_exp, max_exp, num=20)
 
-    values = np.array(list(centrality.values()))
-    values = values[values > 0]  # כדי להימנע מלוג של 0
+        plt.figure(figsize=(12, 6), facecolor='black')
+        plt.hist(values, bins=bins, color='blueviolet', edgecolor='cyan')
+        plt.xscale('log')
+        plt.xlabel(f"{title} Centrality (log scale)", color='white')
+        plt.ylabel("Number of Nodes", color='white')
+        plt.title(f"Distribution of {title} Centrality", color='white')
+        plt.tick_params(colors='white')
+        plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+        plt.tight_layout()
+        plt.show()
 
-    # בוחרים חזקות לבינים
-    min_exp = -4  # לדוגמה: 10^-4
-    max_exp = 0  # עד 10^0
-    bins = np.logspace(min_exp, max_exp, num=20)  # בינים לוגריתמיים
+    # הפעלה לשתי סוגי centrality
+    compute_and_plot_centrality(G, nx.closeness_centrality, "Closeness")
+    compute_and_plot_centrality(G, nx.betweenness_centrality, "Betweenness")
 
-    # ציור ההיסטוגרמה
-    plt.figure(figsize=(12, 6), facecolor='black')
-    plt.hist(values, bins=bins, color='blueviolet', edgecolor='cyan')
-    plt.xscale('log')
-    plt.xlabel("Closeness Centrality (log scale)", color='white')
-    plt.ylabel("Number of Nodes", color='white')
-    plt.title("Distribution of Closeness Centrality", color='white')
-    plt.tick_params(colors='white')
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
-    plt.tight_layout()
-    plt.show()
 
 
 def FIX_CENTARITY_CLOSS_BET_OLD(centrality, label):
@@ -1635,9 +1634,9 @@ if __name__ == '__main__':
 
 
     max_connected_component_graph = build_max_connected_component_graph(G)
-    # node_avg_rating = compute_average_rating(max_connected_component_graph)
-    # node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
-    # draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
+    node_avg_rating = compute_average_rating(max_connected_component_graph)
+    node_colors_fixed = compute_fixed_colors_by_ranges(max_connected_component_graph, node_avg_rating)
+    draw_graph_by_fixed_colors(max_connected_component_graph, node_colors_fixed)
 
     # # #
     # # plot_rating_histogram(node_avg_rating)
@@ -1696,11 +1695,11 @@ if __name__ == '__main__':
     # # Gnm = build_gnm_graph(max_connected_component_graph)
     # # draw_Graph(Gnm, "G(n, m) Graph")
     #
-    Gpa = build_preferential_attachment_model(max_connected_component_graph)
+    # Gpa = build_preferential_attachment_model(max_connected_component_graph)
     # print("PA Number of nodes:", Gpa.number_of_nodes())
     # print("PA Number of edges:", Gpa.number_of_edges())
 
-    draw_Graph(Gpa, "preferential attachment model Graph")
+    # draw_Graph(Gpa, "preferential attachment model Graph")
     #
     #
     # # plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
@@ -1715,10 +1714,10 @@ if __name__ == '__main__':
     # # plot_directed_degree_distributions(max_connected_component_graph, degree_type='total', title='max_connected_component_graph')
     # plot_directed_degree_distributions(Gpa, degree_type='total', title='pa')
     #
-    G_giant = giant_component_directed(Gpa)
-    draw_Graph(G_giant, "Gpa Giant component")
-    avg_dist = average_distance_directed(G_giant)
-    print("Average Distance in Giant Component:", avg_dist)
+    # G_giant = giant_component_directed(Gpa)
+    # draw_Graph(G_giant, "Gpa Giant component")
+    # avg_dist = average_distance_directed(G_giant)
+    # print("Average Distance in Giant Component:", avg_dist)
     #
 
 
@@ -1727,7 +1726,7 @@ if __name__ == '__main__':
     #
     # fit_power_law_with_log_binning(max_connected_component_graph)
 
-    # plot_raw_degree_distribution(max_connected_component_graph, show_fit=True)
+    plot_raw_degree_distribution(max_connected_component_graph, show_fit=True)
 
 
     # plot_degree_distribution_log_binning(max_connected_component_graph, bins=30, show_fit=True)
