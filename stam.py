@@ -1,12 +1,19 @@
 import os
+from collections import Counter
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import close
 from matplotlib_venn import venn3
 import math
+import matplotlib.colors as mcolors
 import numpy as np
 import random
 from scipy.stats import linregress
+import powerlaw
 
+
+from networkx.algorithms.community import greedy_modularity_communities
+from networkx.algorithms.community.quality import modularity
 
 
 def build_original_graph():
@@ -69,11 +76,11 @@ def draw_graph(G):
         for node in G.nodes():
             avg = node_avg_rating.get(node, 0)
             if avg <= -2:
-                colors.append('#FF0000')  # red
+                colors.append('#0000FF')  # כחול
             elif avg > -2 and avg < 2:
-                colors.append('#FFFF00')  # yellow
+                colors.append('#FFFF00')  # צהוב
             else:
-                colors.append('#0000FF')  # blue
+                colors.append('#FF0000')  # אדום
         return colors
 
     node_colors = compute_fixed_colors_by_ranges(G, compute_average_rating(G))
@@ -104,9 +111,9 @@ def draw_graph(G):
 
     # מקרא חדש
     legend_labels = {
-        '#FF0000': '<= -2',  # red
-        '#FFFF00': '-2 < and < 2 and ',   # yellow
-        '#0000FF': '>= 2'    # blue
+        '#0000FF': '<= -2',  # כחול כהה
+        '#FFFF00': '-2 < and < 2 and ',   # אדום
+        '#FF0000': '>= 2'    # צהוב
     }
 
     for color, label in legend_labels.items():
@@ -117,22 +124,7 @@ def draw_graph(G):
     plt.tight_layout()
     plt.show()
 
-def min_max_rating(G):
-
-    def compute_average_rating(G):
-
-        # Compute average incoming rating per node
-        node_avg_rating = {}
-        for node in G.nodes():
-            in_edges = G.in_edges(node, data=True)
-            if in_edges:
-                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
-                node_avg_rating[node] = avg
-            else:
-                node_avg_rating[node] = 0
-        return node_avg_rating
-
-    node_avg_rating = compute_average_rating(G)
+def min_max_rating(node_avg_rating):
 
     # Normalize ratings for color mapping
     min_rating = min(node_avg_rating.values())
@@ -201,7 +193,7 @@ def density(G):
     return density
 
 # todo fix and add ranges
-def degree_distributions(G, degree_type='in', title=' '):
+def plot_directed_degree_distributions(G, degree_type='in', title=' '):
     """
     Plot 3 degree distributions for a directed graph:
     1. Regular histogram
@@ -582,13 +574,15 @@ def average_distance_directed(G):
         print("Warning: Graph is not strongly connected.")
         return float('inf')
 
-def count_directed_cycles(G):
-    if not G.is_directed():
-        raise ValueError("graph must be directed")
+# ---------------------------------------------------------------------
 
-    cycles = list(nx.simple_cycles(G))
-    print(f"Num of cycles in the graph: {len(cycles)}")
-    return cycles
+
+
+# ---------------------------------------------------------------------
+
+def normalize_rating(val, min_rating, max_rating):
+    return (val - min_rating) / (max_rating - min_rating) if max_rating != min_rating else 0.5
+
 
 def calculate_directed_triangle_percentage(G):
     if not G.is_directed():
@@ -608,20 +602,27 @@ def calculate_directed_triangle_percentage(G):
 
     return total_triangles, percentage
 
+def count_directed_cycles(G):
+    if not G.is_directed():
+        raise ValueError("הגרף חייב להיות מכוון")
+
+    cycles = list(nx.simple_cycles(G))
+    print(f"מספר המעגלים בגרף: {len(cycles)}")
+    return cycles
+
+def giant_component_sizes(G, edge_order):
+    sizes = []
+    for edge in edge_order:
+        if G.has_edge(*edge):
+            G.remove_edge(*edge)
+        if len(G.edges) > 0:
+            largest_cc = max(nx.strongly_connected_components(G), key=len)
+            sizes.append(len(largest_cc))
+        else:
+            sizes.append(0)
+    return sizes
+
 def create_orders_and_draw(G):
-
-    def giant_component_sizes(G, edge_order):
-        sizes = []
-        for edge in edge_order:
-            if G.has_edge(*edge):
-                G.remove_edge(*edge)
-            if len(G.edges) > 0:
-                largest_cc = max(nx.strongly_connected_components(G), key=len)
-                sizes.append(len(largest_cc))
-            else:
-                sizes.append(0)
-        return sizes
-
     G_random = build_max_connected_component_graph(G)
     G_heavy_first = build_max_connected_component_graph(G)
     G_light_first = build_max_connected_component_graph(G)
@@ -686,15 +687,336 @@ def create_orders_and_draw(G):
     plt.tight_layout()
     plt.show()
 
+def giant_component_directed(G):
+    """
+
+    Parameters:
+    - G: nx.DiGraph
+    """
+    components = list(nx.strongly_connected_components(G))
+    giant_component = max(components, key=len)
+    giant_subgraph = G.subgraph(giant_component).copy()
+
+    print("giant_component (directed): Nodes =", giant_subgraph.number_of_nodes())
+    print("giant_component (directed): Edges =", giant_subgraph.number_of_edges())
+
+    return giant_subgraph
+
+def giant_component_weakly_directed(G):
+    """
+    מחשבת את הרכיב הקשיר החלש הגדול ביותר בגרף מכוון.
+
+    Parameters:
+    - G: nx.DiGraph
+
+    Returns:
+    - תת-גרף של הרכיב הקשיר החלש הגדול ביותר
+    """
+    components = list(nx.weakly_connected_components(G))
+    giant_component = max(components, key=len)
+    giant_subgraph = G.subgraph(giant_component).copy()
+
+    print("giant_component (weakly connected): Nodes =", giant_subgraph.number_of_nodes())
+    print("giant_component (weakly connected): Edges =", giant_subgraph.number_of_edges())
+
+    return giant_subgraph
+
+def ex5():
+
+    def estimate_r_and_rho(G):
+        colors = nx.get_node_attributes(G, "color")
+        reds = [n for n, c in colors.items() if c == 'red']
+        blues = [n for n, c in colors.items() if c == 'blue']
+        r = len(reds) / G.number_of_nodes()
+
+        same_red_edges = 0
+        total_red_edges = 0
+        same_blue_edges = 0
+        total_blue_edges = 0
+
+        for u, v in G.edges():
+            if colors[u] == 'red':
+                total_red_edges += 1
+                if colors[v] == 'red':
+                    same_red_edges += 1
+            if colors[u] == 'blue':
+                total_blue_edges += 1
+                if colors[v] == 'blue':
+                    same_blue_edges += 1
+
+        rho_R = same_red_edges / total_red_edges if total_red_edges > 0 else 0.5
+        rho_B = same_blue_edges / total_blue_edges if total_blue_edges > 0 else 0.5
+
+        return r, rho_R, rho_B
+
+    def mixed_preferential_attachment(G_orig, m=3):
+        n = G_orig.number_of_nodes()
+        r, rho_R, rho_B = estimate_r_and_rho(G_orig)
+
+        G = nx.DiGraph()
+        G.add_node(0, color='red')
+        G.add_node(1, color='blue')
+        G.add_edge(0, 1)
+
+        n0 = 2
+
+        for new_node in range(n0, n):
+            new_color = 'red' if random.random() < r else 'blue'
+            G.add_node(new_node, color=new_color)
+
+            targets = set()
+            degrees = dict(G.degree())
+            total_degree = sum(degrees.values())
+
+            if total_degree == 0:
+                break
+
+            attempts = 0
+            max_attempts = 1000
+
+            while len(targets) < m and attempts < max_attempts:
+                attempts += 1
+                probs = [degrees[node] / total_degree for node in G.nodes()]
+                candidate = random.choices(list(G.nodes()), weights=probs, k=1)[0]
+
+                if candidate == new_node or candidate in targets:
+                    continue
+
+                candidate_color = G.nodes[candidate]['color']
+                if new_color == 'red':
+                    accept_prob = rho_R if candidate_color == 'red' else 1 - rho_R
+                else:
+                    accept_prob = rho_B if candidate_color == 'blue' else 1 - rho_B
+
+                if random.random() < accept_prob:
+                    targets.add(candidate)
+
+            if len(targets) < m:
+                print(
+                    f"Warning: Node {new_node} connected to only {len(targets)} targets instead of {m} after {attempts} attempts.")
+
+            for target in targets:
+                G.add_edge(new_node, target)
+
+        return G
+
+    def build_original_graph():
+
+        # path to the folder containing the files
+        folder_path = "soc-sign-bitcoinotc.csv"  # or full path if needed
+
+        G = nx.DiGraph()
+
+        # Each file name represents a record (as you described)
+        for filename in os.listdir(folder_path):
+            try:
+                parts = filename.strip().split(',')
+                if len(parts) != 4:
+                    continue  # skip malformed names
+                source = int(parts[0])
+                target = int(parts[1])
+                rating = int(parts[2])
+                time = float(parts[3])
+                G.add_edge(source, target, weight=rating, time=time)
+
+            except Exception as e:
+                print(f"Skipping file {filename} due to error: {e}")
+
+        return G
+
+    def build_max_connected_component_graph(G):
+        strongly_components_G = list(nx.strongly_connected_components(G))
+        print(f"Number of strongly connected components in the graph: {len(strongly_components_G)}")
+
+        max_strong_component = max(strongly_components_G, key=len)
+        max_strong_component_subgraph = G.subgraph(max_strong_component).copy()
+
+        num_nodes = max_strong_component_subgraph.number_of_nodes()
+        num_edges = max_strong_component_subgraph.number_of_edges()
+
+        print("====== Max Strongly Connected Component Info ======")
+        print(f"Number of nodes: {num_nodes}")
+        print(f"Number of edges: {num_edges}")
+        print("===================================================")
+
+        return max_strong_component_subgraph
+
+    # def plot_degree_distribution_by_color(G, color, degree_type='in', title=' '):
+    #     """
+    #     Plot degree distribution (log-X) of nodes with a specific color in a directed graph.
+    #
+    #     Parameters:
+    #     - G: A directed NetworkX graph (nx.DiGraph)
+    #     - color: Node color to filter by (must match value in node attribute 'color')
+    #     - degree_type: 'in' or 'out'
+    #     - title: Title to include in the plot
+    #     """
+    #
+    #     if degree_type not in {'in', 'out'}:
+    #         raise ValueError("degree_type must be 'in' or 'out'")
+    #
+    #     # סינון צמתים לפי צבע
+    #     filtered_nodes = [n for n, data in G.nodes(data=True) if data.get('color') == color]
+    #
+    #     if not filtered_nodes:
+    #         print(f"No nodes with color '{color}' found.")
+    #         return
+    #
+    #     # חישוב דרגות לפי סוג הדרגה
+    #     if degree_type == 'in':
+    #         degrees = [G.in_degree(n) for n in filtered_nodes]
+    #         label = 'In-Degree'
+    #     else:  # 'out'
+    #         degrees = [G.out_degree(n) for n in filtered_nodes]
+    #         label = 'Out-Degree'
+    #
+    #     # הכנה לבניית ההיסטוגרמה
+    #     max_deg = max(degrees)
+    #     bins = np.arange(1, max_deg + 2) - 0.5  # integer bins
+    #
+    #     # שרטוט ההיסטוגרמה בלוגריתם של X
+    #     plt.figure(figsize=(8, 5))
+    #     plt.hist(degrees, bins=bins, color='salmon', edgecolor='black')
+    #     plt.xscale('log')
+    #     plt.xlabel(f'{label} (log scale)')
+    #     plt.ylabel('Frequency')
+    #     plt.title(f'{label} Distribution (Log X-axis) - Color: {color} {title}')
+    #     plt.grid(True, linestyle='--', alpha=0.5)
+    #     plt.tight_layout()
+    #     plt.show()
+
+    def plot_degree_distribution_by_color(G, color, degree_type='in', title=' '):
+        """
+        Plot degree distribution (log-X) of nodes with a specific color in a directed graph.
+
+        Parameters:
+        - G: A directed NetworkX graph (nx.DiGraph)
+        - color: Node color to filter by (must match value in node attribute 'color')
+        - degree_type: 'in' or 'out'
+        - title: Title to include in the plot
+        """
+
+        if degree_type not in {'in', 'out'}:
+            raise ValueError("degree_type must be 'in' or 'out'")
+
+        # סינון צמתים לפי צבע
+        filtered_nodes = [n for n, data in G.nodes(data=True) if data.get('color') == color]
+
+        if not filtered_nodes:
+            print(f"No nodes with color '{color}' found.")
+            return
+
+        # חישוב דרגות לפי סוג הדרגה
+        if degree_type == 'in':
+            degrees = [G.in_degree(n) for n in filtered_nodes]
+            label = 'In-Degree'
+        else:
+            degrees = [G.out_degree(n) for n in filtered_nodes]
+            label = 'Out-Degree'
+
+        # צבע התפלגות בהתאם לבחירה
+        if color == 'red':
+            bar_color = 'salmon'
+        elif color == 'blue':
+            bar_color = 'cornflowerblue'
+        else:
+            bar_color = 'gray'
+
+        # הכנה לבניית ההיסטוגרמה
+        max_deg = max(degrees)
+        bins = np.arange(1, max_deg + 2) - 0.5  # integer bins
+
+        # שרטוט ההיסטוגרמה בלוגריתם של X
+        plt.figure(figsize=(8, 5))
+        plt.hist(degrees, bins=bins, color=bar_color, edgecolor='black')
+        plt.xscale('log')
+        plt.xlabel(f'{label} (log scale)')
+        plt.ylabel('Frequency')
+        plt.title(f'{label} Distribution (Log X-axis) - Color: {color} {title}')
+        plt.grid(True, linestyle='--', alpha=0.5)
+        plt.tight_layout()
+        plt.show()
+
+    def color_by_average_incoming_rating(G, threshold=2):
+
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            ratings = [data['weight'] for _, _, data in in_edges if 'weight' in data]
+
+            if ratings:
+                avg_rating = sum(ratings) / len(ratings)
+            else:
+                avg_rating = 0  # אם אין קשתות נכנסות, נניח ממוצע 0
+
+            color = 'blue' if avg_rating >= threshold else 'red'
+            G.nodes[node]['color'] = color
+
+        return G
+
+    def directed_graph_modularity(G: nx.DiGraph, use_weights=True):
+        """
+        מקבלת גרף מכוון, מזהה קהילות ומחזירה את המודולריות שלהן.
+
+        :param G: גרף מכוון (nx.DiGraph)
+        :param use_weights: האם להשתמש במשקלים
+        :return: ערך המודולריות (float)
+        """
+        # יוצרים גרף לא מכוון לצורך גילוי קהילות (אלגוריתם greedy לא עובד על גרפים מכוונים)
+        G_undirected = G.to_undirected()
+
+        # זיהוי קהילות באמצעות greedy modularity
+        communities = list(greedy_modularity_communities(G_undirected, weight='weight' if use_weights else None))
+
+        # חישוב מודולריות לפי הגרף המקורי (המכוון)
+        mod = modularity(G, communities, weight='weight' if use_weights else None)
+
+        return mod
+
+    G = build_original_graph()
+
+    max_connected_component_graph = build_max_connected_component_graph(G)
+
+    max_connected_component_graph = color_by_average_incoming_rating(max_connected_component_graph)
+    G_mpa = mixed_preferential_attachment(max_connected_component_graph, m=3)\
+
+
+    modMpa = directed_graph_modularity(G_mpa)
+    modMax = directed_graph_modularity(max_connected_component_graph)
+
+    print(f"Modularity of original: {modMax:.4f}")
+    print(f"Modularity of mpa graph: {modMpa:.4f}")
+
+    # draw_Graph(max_connected_component_graph, "Original Graph")
+    # draw_Graph(G_mpa, "Mixed Preferential Attachment")
+
+    # plot_degree_distribution_by_color(max_connected_component_graph, color='red', degree_type='in',title='Original Graph')
+    # plot_degree_distribution_by_color(max_connected_component_graph, color='blue', degree_type='in',title='Original Graph')
+    # plot_degree_distribution_by_color(max_connected_component_graph, color='red', degree_type='out',title='Original Graph')
+    # plot_degree_distribution_by_color(max_connected_component_graph, color='blue', degree_type='out',title='Original Graph')
+    #
+    # plot_degree_distribution_by_color(G_mpa, color='red', degree_type='in', title='Mixed Preferential Attachment')
+    # plot_degree_distribution_by_color(G_mpa, color='blue', degree_type='in', title='Mixed Preferential Attachment')
+    # plot_degree_distribution_by_color(G_mpa, color='red', degree_type='out', title='Mixed Preferential Attachment')
+    # plot_degree_distribution_by_color(G_mpa, color='blue', degree_type='out', title='Mixed Preferential Attachment')
+
+    power_law_no_binning(max_connected_component_graph, show_fit=True, color_filter='red')
+    power_law_binning_logarithm(max_connected_component_graph, bins=20, show_fit=True, color_filter='red')
+    power_law_no_binning(G_mpa, show_fit=True, color_filter='red')
+    power_law_binning_logarithm(G_mpa, bins=20, show_fit=True, color_filter='red')
+
+
+    power_law_no_binning(max_connected_component_graph, show_fit=True, color_filter='blue')
+    power_law_binning_logarithm(max_connected_component_graph, bins=20, show_fit=True, color_filter='blue')
+    power_law_no_binning(G_mpa, show_fit=True, color_filter='blue')
+    power_law_binning_logarithm(G_mpa, bins=20, show_fit=True, color_filter='blue')
+
+
+
 
 if __name__ == '__main__':
 
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
-
-    min_rating, max_rating = min_max_rating(max_connected_component_graph)
-    print("min rating: ", min_rating, "\nmax rating: ", min_rating)
-    avg_dist = average_distance_directed(max_connected_component_graph)
 
     # centrality(max_connected_component_graph)
 
@@ -702,6 +1024,7 @@ if __name__ == '__main__':
     # power_law_binning_logarithm(max_connected_component_graph, bins=20, show_fit=True)
 
     # draw_graph(max_connected_component_graph)
+    # min_rating, max_rating = min_max_rating(node_avg_rating)
 
     # draw_rating_histogram(max_connected_component_graph)
 
@@ -712,9 +1035,10 @@ if __name__ == '__main__':
     # compare_centrality(max_connected_component_graph)
     # density(max_connected_component_graph)
     # small_world(max_connected_component_graph)
-    overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
-
-    create_orders_and_draw(G)
-
+    # overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    #
+    # create_orders_and_draw(G)
+    #
+    # avg_dist = average_distance_directed(max_connected_component_graph)
 
     calculate_directed_triangle_percentage(max_connected_component_graph)
