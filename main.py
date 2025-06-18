@@ -6,8 +6,10 @@ import math
 import numpy as np
 import random
 from scipy.stats import linregress
+from collections import defaultdict
 
 
+#todo check in out degree relation
 
 def build_original_graph():
 
@@ -117,7 +119,23 @@ def draw_graph(G):
     plt.tight_layout()
     plt.show()
 
-def min_max_rating(node_avg_rating):
+def min_max_rating(G):
+
+    def compute_average_rating(G):
+
+        # Compute average incoming rating per node
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                node_avg_rating[node] = avg
+            else:
+                node_avg_rating[node] = 0
+        return node_avg_rating
+
+    node_avg_rating = compute_average_rating(G)
+
 
     # Normalize ratings for color mapping
     min_rating = min(node_avg_rating.values())
@@ -299,7 +317,6 @@ def compare_centrality(G):
     plt.tight_layout()
     plt.show()
 
-#    todo add fit
 def power_law_no_binning(G, show_fit=False):
     import warnings
     warnings.filterwarnings("ignore")  # להימנע מהודעות של powerlaw
@@ -333,8 +350,16 @@ def power_law_no_binning(G, show_fit=False):
             print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
 
             x_fit = np.linspace(xmin, max(degrees), 100)
-            C = hist[0] * bin_centers[0] ** alpha
-            y_fit = C * x_fit ** (-alpha)
+            # C = hist[0] * bin_centers[0] ** alpha
+            # y_fit = C * x_fit ** (-alpha)
+
+            # Normalize the fit line to start from the same y-value as the bar chart
+            y_fit = (x_fit / xmin) ** (-alpha)
+            y_fit *= hist[bin_centers >= xmin][0] / y_fit[0]
+
+            # just if want part of x scale
+            plt.xlim(left=xmin)
+
             plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
             plt.legend()
 
@@ -343,7 +368,7 @@ def power_law_no_binning(G, show_fit=False):
 
     plt.tight_layout()
     plt.show()
-#    todo fix fit
+
 def power_law_binning_logarithm(G, bins=20, show_fit=False):
     import warnings
     warnings.filterwarnings("ignore")
@@ -379,8 +404,14 @@ def power_law_binning_logarithm(G, bins=20, show_fit=False):
             print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
 
             x_fit = np.linspace(xmin, max_deg, 100)
-            C = hist[0] * bin_centers[0] ** alpha
-            y_fit = C * x_fit ** (-alpha)
+
+            # Normalize the fit line to start from the same y-value as the bar chart
+            y_fit = (x_fit / xmin) ** (-alpha)
+            y_fit *= hist[bin_centers >= xmin][0] / y_fit[0]
+            # just if want part of x scale
+            plt.xlim(left=xmin)
+
+
             plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
             plt.legend()
 
@@ -672,7 +703,60 @@ def create_orders_and_draw(G):
     plt.show()
 
 
+# -----------------------------------------------------------------
+# draw 3 graphes - 3 colores
+def split_graph_by_color(G):
+    def compute_average_rating(G):
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                node_avg_rating[node] = avg
+            else:
+                node_avg_rating[node] = 0
+        return node_avg_rating
 
+    def get_color(avg):
+        if avg <= -2:
+            return 'red'
+        elif avg < 2:
+            return 'yellow'
+        else:
+            return 'blue'
+
+    node_avg_rating = compute_average_rating(G)
+    color_map = {node: get_color(avg) for node, avg in node_avg_rating.items()}
+
+    # קיבוץ צמתים לפי צבע
+    color_groups = {'red': set(), 'yellow': set(), 'blue': set()}
+    for node, color in color_map.items():
+        color_groups[color].add(node)
+
+    subgraphs = {}
+    for color, nodes in color_groups.items():
+        # סינון הקשתות: רק קשתות בין צמתים באותו צבע
+        edges = [(u, v, data) for u, v, data in G.edges(data=True)
+                 if u in nodes and v in nodes]
+        subG = nx.DiGraph()
+        subG.add_nodes_from(nodes)
+        subG.add_edges_from(edges)
+        subgraphs[color] = subG
+
+    # הדפסת מידע
+    for color, subG in subgraphs.items():
+        print(f"\n=== Subgraph for {color.upper()} nodes ===")
+        print(f"Number of nodes: {subG.number_of_nodes()}")
+        print(f"Number of edges: {subG.number_of_edges()}")
+
+        # אופציונלית: ציור כל תת-גרף
+        pos = nx.spring_layout(subG, seed=42)
+        plt.figure(figsize=(6, 5))
+        nx.draw(subG, pos, with_labels=False, node_color=color,
+                edge_color='gray', node_size=40, arrowsize=10)
+        plt.title(f"{color.upper()} Subgraph")
+        plt.tight_layout()
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -683,10 +767,11 @@ if __name__ == '__main__':
     # centrality(max_connected_component_graph)
 
     # power_law_no_binning(max_connected_component_graph, show_fit=True)
+    #
     # power_law_binning_logarithm(max_connected_component_graph, bins=20, show_fit=True)
 
     # draw_graph(max_connected_component_graph)
-    # min_rating, max_rating = min_max_rating(node_avg_rating)
+    # min_rating, max_rating = min_max_rating(max_connected_component_graph)
 
     # draw_rating_histogram(max_connected_component_graph)
 
@@ -697,10 +782,16 @@ if __name__ == '__main__':
     # compare_centrality(max_connected_component_graph)
     # density(max_connected_component_graph)
     # small_world(max_connected_component_graph)
-    overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    # overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
 
-    create_orders_and_draw(G)
+    # run for ever
+    # create_orders_and_draw(G)
+    #
+    # avg_dist = average_distance_directed(max_connected_component_graph)
+    #
+    # calculate_directed_triangle_percentage(max_connected_component_graph)
 
-    avg_dist = average_distance_directed(max_connected_component_graph)
 
-    calculate_directed_triangle_percentage(max_connected_component_graph)
+    # ----------------------------------------------------------
+
+    # split_graph_by_color(max_connected_component_graph)
