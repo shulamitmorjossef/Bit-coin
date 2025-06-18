@@ -1,12 +1,19 @@
 import os
+from collections import Counter
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import close
 from matplotlib_venn import venn3
 import math
+import matplotlib.colors as mcolors
 import numpy as np
 import random
 from scipy.stats import linregress
+import powerlaw
 
+
+from networkx.algorithms.community import greedy_modularity_communities
+from networkx.algorithms.community.quality import modularity
 
 
 def build_original_graph():
@@ -186,7 +193,7 @@ def density(G):
     return density
 
 # todo fix and add ranges
-def degree_distributions(G, degree_type='in', title=' '):
+def plot_directed_degree_distributions(G, degree_type='in', title=' '):
     """
     Plot 3 degree distributions for a directed graph:
     1. Regular histogram
@@ -390,11 +397,49 @@ def power_law_binning_logarithm(G, bins=20, show_fit=False):
     plt.tight_layout()
     plt.show()
 # todo log Y
+# def draw_rating_histogram(G):
+#
+#     def compute_average_rating(G):
+#
+#         # Compute average incoming rating per node
+#         node_avg_rating = {}
+#         for node in G.nodes():
+#             in_edges = G.in_edges(node, data=True)
+#             if in_edges:
+#                 avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+#                 node_avg_rating[node] = avg
+#             else:
+#                 node_avg_rating[node] = 0
+#         return node_avg_rating
+#
+#     node_avg_rating = compute_average_rating(G)
+#     # המרת הדירוגים למערך של ערכים
+#     ratings = list(node_avg_rating.values())
+#
+#     # יצירת היסטוגרמה עם טווח ערכים ב-10-10
+#     plt.figure(figsize=(8, 6))
+#
+#     # הגדרת טווח ציר X (מ-10 עד 10, כל 1 יחידה)
+#     bins = np.arange(-10, 11, 1)
+#
+#     # יצירת היסטוגרמה
+#     plt.hist(ratings, bins=bins, edgecolor='black', color='deepskyblue', alpha=0.7)
+#
+#     # כותרת ותיוגים
+#     plt.title('Distribution of Node Average Ratings', fontsize=16)
+#     plt.xlabel('Average Rating', fontsize=12)
+#     plt.ylabel('Number of Nodes', fontsize=12)
+#     plt.grid(axis='y', linestyle='--', alpha=0.5)
+#
+#     # הצגת ההיסטוגרמה
+#     plt.tight_layout()
+#     plt.show()
+
 def draw_rating_histogram(G):
+    import matplotlib.pyplot as plt
+    import numpy as np
 
     def compute_average_rating(G):
-
-        # Compute average incoming rating per node
         node_avg_rating = {}
         for node in G.nodes():
             in_edges = G.in_edges(node, data=True)
@@ -406,27 +451,27 @@ def draw_rating_histogram(G):
         return node_avg_rating
 
     node_avg_rating = compute_average_rating(G)
-    # המרת הדירוגים למערך של ערכים
     ratings = list(node_avg_rating.values())
 
-    # יצירת היסטוגרמה עם טווח ערכים ב-10-10
     plt.figure(figsize=(8, 6))
-
-    # הגדרת טווח ציר X (מ-10 עד 10, כל 1 יחידה)
     bins = np.arange(-10, 11, 1)
 
-    # יצירת היסטוגרמה
-    plt.hist(ratings, bins=bins, edgecolor='black', color='deepskyblue', alpha=0.7)
+    # יצירת ההיסטוגרמה באחוזים
+    counts, bins = np.histogram(ratings, bins=bins, density=True)
+    counts = counts * 100  # להמיר לאחוזים
+    bin_centers = (bins[:-1] + bins[1:]) / 2
 
-    # כותרת ותיוגים
+    plt.bar(bin_centers, counts, width=0.9, edgecolor='black',
+            color='deepskyblue', alpha=0.7)
+
+    plt.ylim(0, max(counts) * 1.1)
     plt.title('Distribution of Node Average Ratings', fontsize=16)
     plt.xlabel('Average Rating', fontsize=12)
-    plt.ylabel('Number of Nodes', fontsize=12)
+    plt.ylabel('Percentage of Nodes', fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.5)
-
-    # הצגת ההיסטוגרמה
     plt.tight_layout()
     plt.show()
+
 
 def overlap(G, title, filename):
 
@@ -593,6 +638,16 @@ def calculate_directed_triangle_percentage(G):
 
     return total_triangles, percentage
 
+
+# ---------------------------------------------------------------------
+
+
+
+# ---------------------------------------------------------------------
+
+def normalize_rating(val, min_rating, max_rating):
+    return (val - min_rating) / (max_rating - min_rating) if max_rating != min_rating else 0.5
+
 def create_orders_and_draw(G):
 
     def giant_component_sizes(G, edge_order):
@@ -697,10 +752,11 @@ if __name__ == '__main__':
     # compare_centrality(max_connected_component_graph)
     # density(max_connected_component_graph)
     # small_world(max_connected_component_graph)
-    overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
-
-    create_orders_and_draw(G)
-
-    avg_dist = average_distance_directed(max_connected_component_graph)
-
-    calculate_directed_triangle_percentage(max_connected_component_graph)
+    # overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+    #
+    # create_orders_and_draw(G)
+    #
+    # avg_dist = average_distance_directed(max_connected_component_graph)
+    #
+    # calculate_directed_triangle_percentage(max_connected_component_graph)
+    count_directed_cycles(max_connected_component_graph)
