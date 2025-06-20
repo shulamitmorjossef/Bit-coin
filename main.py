@@ -9,8 +9,6 @@ from scipy.stats import linregress
 from collections import defaultdict
 
 
-#todo check in out degree relation
-
 def build_original_graph():
 
     # path to the folder containing the files
@@ -725,6 +723,76 @@ def calculate_symmetric_edge_percentage(G):
     print(f"Percentage of symmetric edges with identical weight: {percentage:.2f}% ({symmetric_edges} out of {total_edges})")
     return percentage
 
+import networkx as nx
+
+def compute_average_rating(G):
+    node_avg_rating = {}
+    for node in G.nodes():
+        in_edges = G.in_edges(node, data=True)
+        if in_edges:
+            avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+            node_avg_rating[node] = avg
+        else:
+            node_avg_rating[node] = 0
+    return node_avg_rating
+
+def get_color(avg):
+    if avg <= -2:
+        return 'red'
+    elif avg < 2:
+        return 'yellow'
+    else:
+        return 'blue'
+
+def compute_symmetric_edge_percentages_by_color(G):
+    node_avg_rating = compute_average_rating(G)
+    color_map = {node: get_color(avg) for node, avg in node_avg_rating.items()}
+
+    color_groups = {'red': set(), 'yellow': set(), 'blue': set()}
+    for node, color in color_map.items():
+        color_groups[color].add(node)
+
+    percentages = {}
+    for color, nodes in color_groups.items():
+        sub_edges = [(u, v) for u, v in G.edges() if u in nodes and v in nodes]
+        edge_set = set(sub_edges)
+        total = len(sub_edges)
+        symmetric = 0
+
+        for u, v in sub_edges:
+            if (v, u) in edge_set:
+                if G[u][v]['weight'] == G[v][u]['weight']:
+                    symmetric += 1
+
+        percent = (symmetric / total * 100) if total > 0 else 0
+        percentages[color] = {
+            'total_edges': total,
+            'symmetric_edges': symmetric,
+            'percentage': percent
+        }
+
+    return percentages
+
+def check_symmetric_edge_percentages_all_colors(G):
+    result = compute_symmetric_edge_percentages_by_color(G)
+    for color, data in result.items():
+        print(f"{color.upper()} — Symmetric edges: {data['symmetric_edges']}/{data['total_edges']} "
+              f"({data['percentage']:.2f}%)")
+
+def compute_equal_in_out_degree_percentage(G):
+    count_equal = 0
+    total_nodes = G.number_of_nodes()
+
+    for node in G.nodes():
+        indeg = G.in_degree(node)
+        outdeg = G.out_degree(node)
+        if indeg == outdeg:
+            count_equal += 1
+
+    percentage = (count_equal / total_nodes * 100) if total_nodes > 0 else 0
+    return percentage, count_equal, total_nodes
+
+
 # -----------------------------------------------------------------
 # draw 3 graphes - 3 colores
 def split_graph_by_color(G):
@@ -781,6 +849,7 @@ def split_graph_by_color(G):
         plt.show()
 
 
+
 if __name__ == '__main__':
 
     G = build_original_graph()
@@ -817,5 +886,12 @@ if __name__ == '__main__':
     # ----------------------------------------------------------
 
 
-    calculate_symmetric_edge_percentage(max_connected_component_graph)
+    # calculate_symmetric_edge_percentage(max_connected_component_graph)
     # split_graph_by_color(max_connected_component_graph)
+
+    check_symmetric_edge_percentages_all_colors(max_connected_component_graph)
+    percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
+    print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
+          f"({equal_count} out of {total})")
+
+
