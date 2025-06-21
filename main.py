@@ -200,37 +200,72 @@ def density(G):
     print("Density:", density)
     return density
 
-# todo fix and add ranges
-def degree_distributions(G, degree_type='in', title=' '):
+def degree_distributions(G, degree_type='in', title=' ', x_min=None, x_max=None, color=None):
     """
-    Plot 3 degree distributions for a directed graph:
-    1. Regular histogram
-    2. Normalized histogram
-    3. Log-X histogram (bars)
+    Plot log-X histogram of degree distribution for nodes of a specific color.
 
     Parameters:
-    - G: A directed NetworkX graph (nx.DiGraph)
+    - G: NetworkX DiGraph
     - degree_type: 'in', 'out', or 'total'
+    - title: Plot title
+    - x_min, x_max: Exponents for logspace binning
+    - color: One of 'red', 'yellow', 'blue', or None (for all nodes)
     """
+
+    def compute_average_rating(G):
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                node_avg_rating[node] = avg
+            else:
+                node_avg_rating[node] = 0
+        return node_avg_rating
+
+    avg_rating = compute_average_rating(G)
+
+    if color == 'red':
+        nodes = [n for n, avg in avg_rating.items() if avg <= -2]
+        title += ' (Red: ≤ -2)'
+    elif color == 'yellow':
+        nodes = [n for n, avg in avg_rating.items() if -2 < avg < 2]
+        title += ' (Yellow: -2 < avg < 2)'
+    elif color == 'blue':
+        nodes = [n for n, avg in avg_rating.items() if avg >= 2]
+        title += ' (Blue: ≥ 2)'
+    elif color is None:
+        nodes = list(G.nodes())
+    else:
+        raise ValueError("color must be 'red', 'yellow', 'blue', or None")
+
     if degree_type == 'in':
-        degrees = [d for _, d in G.in_degree()]
+        degrees = [G.in_degree(n) for n in nodes]
         label = 'In-Degree'
     elif degree_type == 'out':
-        degrees = [d for _, d in G.out_degree()]
+        degrees = [G.out_degree(n) for n in nodes]
         label = 'Out-Degree'
     elif degree_type == 'total':
-        degrees = [G.in_degree(n) + G.out_degree(n) for n in G.nodes()]
+        degrees = [G.in_degree(n) + G.out_degree(n) for n in nodes]
         label = 'Total Degree'
     else:
         raise ValueError("degree_type must be 'in', 'out', or 'total'")
 
-    # Prepare histogram bins
-    max_deg = max(degrees)
-    bins = np.arange(1, max_deg + 2) - 0.5  # integer bins
+    degrees = [d for d in degrees if d > 0]  # להסיר אפסים כדי לא לשבור את log
 
-    # 3. Log-X histogram
+    if not degrees:
+        print(f"No degrees to plot for color: {color}")
+        return
+
+    if x_min is None:
+        x_min = math.log10(max(min(degrees), 1))
+    if x_max is None:
+        x_max = math.log10(max(degrees))
+
+    bins = np.logspace(x_min, x_max, num=20)
+
     plt.figure(figsize=(8, 5))
-    plt.hist(degrees, bins=bins, color='salmon', edgecolor='black')
+    plt.hist(degrees, bins=bins, color=color if color else 'salmon', edgecolor='black')
     plt.xscale('log')
     plt.xlabel(f'{label} (log scale)')
     plt.ylabel('Frequency')
@@ -238,6 +273,23 @@ def degree_distributions(G, degree_type='in', title=' '):
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.show()
+
+def all_degree_distributions(G):
+    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=3, color='blue')
+    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=3, color='blue')
+    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=3, color='blue')
+
+    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=3, color='red')
+    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=3, color='red')
+    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=3, color='red')
+
+    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=3, color='yellow')
+    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=3, color='yellow')
+    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=3, color='yellow')
+
+    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=3)
+    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=3)
+    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=3)
 
 def centrality(G):
     closeness_centrality = nx.closeness_centrality(G)
@@ -314,11 +366,42 @@ def compare_centrality(G):
     plt.tight_layout()
     plt.show()
 
-def power_law_no_binning(G, show_fit=False):
+def power_law_no_binning(G, show_fit=False, color=None):
     import warnings
-    warnings.filterwarnings("ignore")  # להימנע מהודעות של powerlaw
+    warnings.filterwarnings("ignore")
 
-    degrees = [d for _, d in G.degree()]
+    def compute_average_rating(G):
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                node_avg_rating[node] = avg
+            else:
+                node_avg_rating[node] = 0
+        return node_avg_rating
+
+    avg_rating = compute_average_rating(G)
+
+    if color == 'red':
+        nodes = [n for n, avg in avg_rating.items() if avg <= -2]
+        title = "Power-law (Red ≤ -2)"
+    elif color == 'yellow':
+        nodes = [n for n, avg in avg_rating.items() if -2 < avg < 2]
+        title = "Power-law (Yellow -2 < avg < 2)"
+    elif color == 'blue':
+        nodes = [n for n, avg in avg_rating.items() if avg >= 2]
+        title = "Power-law (Blue ≥ 2)"
+    else:
+        nodes = list(G.nodes())
+        title = "Power-law (All Nodes)"
+
+    degrees = [G.degree(n) for n in nodes if G.degree(n) > 0]
+
+    if not degrees:
+        print(f"No degrees to plot for color: {color}")
+        return
+
     hist, bin_edges = np.histogram(degrees, bins=range(1, max(degrees) + 2), density=True)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
@@ -328,49 +411,70 @@ def power_law_no_binning(G, show_fit=False):
     plt.yscale('log')
     plt.xlabel("Vertex Degree")
     plt.ylabel("Probability")
-    plt.title("Raw Degree Distribution (No Binning)")
+    plt.title(title)
     plt.grid(True, which='both', linestyle='--', alpha=0.4)
-    print("before")
+
     if show_fit:
-        print("show fit")
         try:
-            print("try")
             import powerlaw
             fit = powerlaw.Fit(degrees, discrete=True)
             alpha = fit.power_law.alpha
             xmin = fit.power_law.xmin
             R, p = fit.distribution_compare('power_law', 'lognormal')
 
-            print(f"⚙️ Raw Fit Results:")
+            print(f"⚙️ Raw Fit Results for {color or 'all'}:")
             print(f"  α (power-law exponent): {alpha:.3f}")
             print(f"  xmin: {xmin}")
             print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
 
             x_fit = np.linspace(xmin, max(degrees), 100)
-            # C = hist[0] * bin_centers[0] ** alpha
-            # y_fit = C * x_fit ** (-alpha)
-
-            # Normalize the fit line to start from the same y-value as the bar chart
             y_fit = (x_fit / xmin) ** (-alpha)
             y_fit *= hist[bin_centers >= xmin][0] / y_fit[0]
-
-            # just if want part of x scale
             plt.xlim(left=xmin)
-
             plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
             plt.legend()
-
         except ImportError:
             print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
 
     plt.tight_layout()
     plt.show()
 
-def power_law_binning_logarithm(G, bins=20, show_fit=False):
+def power_law_binning_logarithm(G, bins=20, show_fit=False, color=None):
     import warnings
     warnings.filterwarnings("ignore")
 
-    degrees = [d for _, d in G.degree()]
+    def compute_average_rating(G):
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                node_avg_rating[node] = avg
+            else:
+                node_avg_rating[node] = 0
+        return node_avg_rating
+
+    avg_rating = compute_average_rating(G)
+
+    if color == 'red':
+        nodes = [n for n, avg in avg_rating.items() if avg <= -2]
+        title = "Log-Binned Power-law (Red ≤ -2)"
+    elif color == 'yellow':
+        nodes = [n for n, avg in avg_rating.items() if -2 < avg < 2]
+        title = "Log-Binned Power-law (Yellow -2 < avg < 2)"
+    elif color == 'blue':
+        nodes = [n for n, avg in avg_rating.items() if avg >= 2]
+        title = "Log-Binned Power-law (Blue ≥ 2)"
+    else:
+        nodes = list(G.nodes())
+        title = "Log-Binned Power-law (All Nodes)"
+
+    degrees = [G.degree(n) for n in nodes if G.degree(n) > 0]
+
+    if not degrees:
+        print(f"No degrees to plot for color: {color}")
+        return
+
     min_deg = max(min(degrees), 1)
     max_deg = max(degrees)
     log_bins = np.logspace(np.log10(min_deg), np.log10(max_deg), bins)
@@ -384,7 +488,7 @@ def power_law_binning_logarithm(G, bins=20, show_fit=False):
     plt.yscale('log')
     plt.xlabel("Vertex Degree")
     plt.ylabel("Probability")
-    plt.title("Log-binned Degree Distribution")
+    plt.title(title)
     plt.grid(True, which='both', linestyle='--', alpha=0.4)
 
     if show_fit:
@@ -395,29 +499,37 @@ def power_law_binning_logarithm(G, bins=20, show_fit=False):
             xmin = fit.power_law.xmin
             R, p = fit.distribution_compare('power_law', 'lognormal')
 
-            print(f"⚙️ Log-Binned Fit Results:")
+            print(f"⚙️ Log-Binned Fit Results for {color or 'all'}:")
             print(f"  α (power-law exponent): {alpha:.3f}")
             print(f"  xmin: {xmin}")
             print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
 
             x_fit = np.linspace(xmin, max_deg, 100)
-
-            # Normalize the fit line to start from the same y-value as the bar chart
             y_fit = (x_fit / xmin) ** (-alpha)
             y_fit *= hist[bin_centers >= xmin][0] / y_fit[0]
-            # just if want part of x scale
             plt.xlim(left=xmin)
-
-
             plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
             plt.legend()
-
         except ImportError:
             print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
 
     plt.tight_layout()
     plt.show()
-# todo log Y
+
+def all_power_law(G):
+
+    power_law_no_binning(G, show_fit=True, color='blue')
+    power_law_binning_logarithm(G, bins=20, show_fit=True, color='blue')
+
+    power_law_no_binning(G, show_fit=True, color='red')
+    power_law_binning_logarithm(G, bins=20, show_fit=True, color='red')
+
+    power_law_no_binning(G, show_fit=True, color='yellow')
+    power_law_binning_logarithm(G, bins=20, show_fit=True, color='yellow')
+
+    power_law_no_binning(G, show_fit=True)
+    power_law_binning_logarithm(G, bins=20, show_fit=True)
+
 def draw_rating_histogram(G):
 
     def compute_average_rating(G):
@@ -723,8 +835,6 @@ def calculate_symmetric_edge_percentage(G):
     print(f"Percentage of symmetric edges with identical weight: {percentage:.2f}% ({symmetric_edges} out of {total_edges})")
     return percentage
 
-import networkx as nx
-
 def compute_average_rating(G):
     node_avg_rating = {}
     for node in G.nodes():
@@ -859,17 +969,13 @@ if __name__ == '__main__':
     # print("min rating: ", min_rating, "\nmax rating: ", min_rating)
 
     # centrality(max_connected_component_graph)
-
-    # power_law_no_binning(max_connected_component_graph, show_fit=True)
-    # power_law_binning_logarithm(max_connected_component_graph, bins=20, show_fit=True)
-
     # draw_graph(max_connected_component_graph)
 
     # draw_rating_histogram(max_connected_component_graph)
 
-    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='in', title='max_connected_component_graph')
-    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='out', title='max_connected_component_graph')
-    # plot_directed_degree_distributions(max_connected_component_graph, degree_type='total', title='max_connected_component_graph')
+    # all_power_law(max_connected_component_graph)
+    # all_degree_distributions(max_connected_component_graph)
+
 
     # compare_centrality(max_connected_component_graph)
     # density(max_connected_component_graph)
@@ -889,9 +995,9 @@ if __name__ == '__main__':
     # calculate_symmetric_edge_percentage(max_connected_component_graph)
     # split_graph_by_color(max_connected_component_graph)
 
-    check_symmetric_edge_percentages_all_colors(max_connected_component_graph)
-    percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
-    print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
-          f"({equal_count} out of {total})")
+    # check_symmetric_edge_percentages_all_colors(max_connected_component_graph)
+    # percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
+    # print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
+    #       f"({equal_count} out of {total})")
 
 
