@@ -853,8 +853,9 @@ def get_color(avg):
         return 'yellow'
     else:
         return 'blue'
-
+# TODO check num of edges w weight = 0
 def compute_symmetric_edge_percentages_by_color(G):
+    # TODO check sum of edges sum to to total edges
     node_avg_rating = compute_average_rating(G)
     color_map = {node: get_color(avg) for node, avg in node_avg_rating.items()}
 
@@ -958,6 +959,154 @@ def split_graph_by_color(G):
         plt.tight_layout()
         plt.show()
 
+def spreading_mode(G):
+    import pandas as pd
+    import networkx as nx
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import random
+
+    # =====================
+    # Color Assignment by Rating
+    # =====================
+    def compute_average_rating(G):
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                node_avg_rating[node] = avg
+            else:
+                node_avg_rating[node] = 0
+        return node_avg_rating
+
+    def assign_colors_by_rating(G):
+        avg_rating = compute_average_rating(G)
+        for node in G.nodes():
+            avg = avg_rating.get(node, 0)
+            if avg <= -2:
+                color = 'red'
+            elif -2 < avg < 2:
+                color = 'yellow'
+            else:
+                color = 'blue'
+            G.nodes[node]['color'] = color
+
+    assign_colors_by_rating(G)
+
+    # =====================
+    # Spreading function (with regulation set injection)
+    # =====================
+    def spread_message(G, source_nodes, p, steps=10, regulation_set=None):
+        informed = set(source_nodes)
+        history = []
+
+        for _ in range(steps):
+            new_informed = set(informed)
+            for node in informed:
+                node_color = G.nodes[node]['color']
+                for neighbor in G.neighbors(node):
+                    if neighbor in informed:
+                        continue
+                    neighbor_color = G.nodes[neighbor]['color']
+                    prob = p if node_color == neighbor_color else (1 - p)
+                    if random.random() < prob:
+                        new_informed.add(neighbor)
+
+            if regulation_set:
+                new_informed |= regulation_set
+
+            informed = new_informed
+            reds = sum(1 for n in informed if G.nodes[n]['color'] == 'red')
+            yellows = sum(1 for n in informed if G.nodes[n]['color'] == 'yellow')
+            history.append((reds, yellows))
+
+        return history
+
+    # =====================
+    # Regulation functions
+    # =====================
+    def rlr_set(rho):
+        return set(random.sample(list(G.nodes()), int(len(G) * rho)))
+
+    def blue_only_set(rho):
+        yellow_nodes = [n for n in G.nodes if G.nodes[n]['color'] == 'yellow']
+        return set(random.sample(yellow_nodes, int(len(yellow_nodes) * rho)))
+
+    # =====================
+    # Averaging Function
+    # =====================
+    def average_spread(G, source_selector, p, steps=10, regulation_set_generator=None, runs=100):
+        reds_all = np.zeros(steps)
+        yellows_all = np.zeros(steps)
+
+        for _ in range(runs):
+            source_nodes = source_selector()
+            reg_set = regulation_set_generator() if regulation_set_generator else None
+            history = spread_message(G, source_nodes, p, steps, regulation_set=reg_set)
+            reds = np.array([r for r, y in history])
+            yellows = np.array([y for r, y in history])
+            reds_all += reds
+            yellows_all += yellows
+
+        return reds_all / runs, yellows_all / runs
+
+    def select_random_reds(k=1):
+        red_nodes = [n for n in G.nodes if G.nodes[n]['color'] == 'red']
+        return random.sample(red_nodes, k)
+
+    # =====================
+    # Run Scenarios
+    # =====================
+    scenarios = {
+        "Strong No-Reg": (1.0, None),
+        "p=0.7 No-Reg": (0.7, None),
+        "Strong RLR(0.25)": (1.0, lambda: rlr_set(0.25)),
+        "p=0.7 RLR(0.25)": (0.7, lambda: rlr_set(0.25)),
+        "Strong BlueOnly(0.25)": (1.0, lambda: blue_only_set(0.25)),
+        "p=0.7 BlueOnly(0.25)": (0.7, lambda: blue_only_set(0.25)),
+    }
+
+    average_results = {}
+    for label, (p_val, reg_fn) in scenarios.items():
+        reds_avg, yellows_avg = average_spread(G, select_random_reds, p=p_val,
+                                               regulation_set_generator=reg_fn, steps=10, runs=100)
+        average_results[label] = (reds_avg, yellows_avg)
+
+    # =====================
+    # Plot Results
+    # =====================
+    plt.figure(figsize=(10, 6))
+    colors = {
+        "p=0.7 No-Reg": "orange",
+        "p=0.7 RLR(0.25)": "purple",
+        "Strong No-Reg": "blue",
+        "Strong RLR(0.25)": "green",
+        "Strong BlueOnly(0.25)": "brown",
+        "p=0.7 BlueOnly(0.25)": "red"
+    }
+
+    for label, (reds, yellows) in average_results.items():
+        plt.plot(reds, label=f"{label} – Red", linestyle='--', color=colors[label])
+        plt.plot(yellows, label=f"{label} – Yellow", linestyle='-', color=colors[label])
+
+    plt.xlabel("Time Step")
+    plt.ylabel("Average Informed Users")
+    plt.title("Average Spread Over 100 Runs (with Regulation Support)")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
+
+    # =====================
+    # Compute Echo Chamber Metrics
+    # =====================
+    print("\n=== Echo Chamber Metrics ===")
+    for label, (reds_avg, yellows_avg) in average_results.items():
+        alpha = reds_avg[-1] + yellows_avg[-1]
+        phi_red = reds_avg[-1] / alpha if alpha > 0 else 0
+        phi_yellow = yellows_avg[-1] / alpha if alpha > 0 else 0
+        print(f"{label}:")
+        print(f"  α (size) = {alpha:.2f}, ϕ_red = {phi_red:.2f}, ϕ_yellow = {phi_yellow:.2f}")
 
 
 if __name__ == '__main__':
@@ -1000,4 +1149,4 @@ if __name__ == '__main__':
     # print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
     #       f"({equal_count} out of {total})")
 
-
+    spreading_mode(max_connected_component_graph)
