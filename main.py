@@ -642,7 +642,7 @@ def random_graph(G):
         gnm = nx.gnm_random_graph(n, m, directed=True)
         return gnm
 
-    def build_preferential_attachment_model(original_graph, seed=None):
+def build_preferential_attachment_model(original_graph, seed=None):
         if seed is not None:
             random.seed(seed)
 
@@ -959,6 +959,225 @@ def split_graph_by_color(G):
         plt.tight_layout()
         plt.show()
 
+def build_cross_color_edges_graph(G):
+    def compute_average_rating(G):
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                node_avg_rating[node] = avg
+            else:
+                node_avg_rating[node] = None
+        return node_avg_rating
+
+    def get_color(avg):
+        if avg is None:
+            return None
+        if avg <= -2:
+            return 'red'
+        elif avg < 2:
+            return 'yellow'
+        else:
+            return 'blue'
+
+    # שלב 1: חישוב צבע לכל קודקוד
+    node_avg_rating = compute_average_rating(G)
+    color_map = {node: get_color(avg) for node, avg in node_avg_rating.items() if get_color(avg)}
+
+    # שלב 2: מציאת כל הקשתות בין צבעים שונים
+    cross_color_edges = []
+    color_counts = defaultdict(int)
+    weights = []
+
+    for u, v, data in G.edges(data=True):
+        if u in color_map and v in color_map:
+            color_u = color_map[u]
+            color_v = color_map[v]
+            if color_u != color_v:
+                cross_color_edges.append((u, v, data))
+                weights.append(data['weight'])
+                color_counts[(color_u, color_v)] += 1
+
+    # שלב 3: בניית גרף חדש
+    cross_color_G = nx.DiGraph()
+    cross_color_G.add_edges_from(cross_color_edges)
+
+    print(f"\n🎯 קשתות צבעוניות (מקודקודים בצבעים שונים): {len(cross_color_edges)}")
+    print(f"🧮 מספר קודקודים בגרף החדש: {cross_color_G.number_of_nodes()}")
+    print(f"📊 טווח משקלים: {min(weights)} עד {max(weights)}")
+    print(f"📈 ממוצע משקלים: {sum(weights) / len(weights):.2f}")
+
+    print("\n📚 פירוט לפי סוגי צבעים:")
+    for (src_color, dst_color), count in color_counts.items():
+        print(f"  {src_color.upper()} → {dst_color.upper()}: {count} קשתות")
+
+    # שלב 4: ציור
+    pos = nx.spring_layout(cross_color_G, seed=42)
+    node_colors = [color_map[n] for n in cross_color_G.nodes()]
+    nx.draw(cross_color_G, pos,
+            node_color=node_colors,
+            edge_color='gray',
+            node_size=40,
+            arrowsize=10)
+    plt.title("גרף של קשתות צבעוניות (בין צבעים שונים)")
+    plt.tight_layout()
+    plt.show()
+
+    return cross_color_G
+
+
+# def spreading_mode(G):
+#     import pandas as pd
+#     import networkx as nx
+#     import matplotlib.pyplot as plt
+#     import numpy as np
+#     import random
+#
+#     # =====================
+#     # Color Assignment by Rating
+#     # =====================
+#     def compute_average_rating(G):
+#         node_avg_rating = {}
+#         for node in G.nodes():
+#             in_edges = G.in_edges(node, data=True)
+#             if in_edges:
+#                 # avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+#                 avg = sum(data.get('weight', 1.0) for _, _, data in in_edges) / len(in_edges)
+#
+#                 node_avg_rating[node] = avg
+#             else:
+#                 node_avg_rating[node] = 0
+#         return node_avg_rating
+#
+#     def assign_colors_by_rating(G):
+#         avg_rating = compute_average_rating(G)
+#         for node in G.nodes():
+#             avg = avg_rating.get(node, 0)
+#             if avg <= -2:
+#                 color = 'red'
+#             elif -2 < avg < 2:
+#                 color = 'yellow'
+#             else:
+#                 color = 'blue'
+#             G.nodes[node]['color'] = color
+#
+#     assign_colors_by_rating(G)
+#
+#     # =====================
+#     # Spreading function (with regulation set injection)
+#     # =====================
+#     def spread_message(G, source_nodes, p, steps=10, regulation_set=None):
+#         informed = set(source_nodes)
+#         history = []
+#
+#         for _ in range(steps):
+#             new_informed = set(informed)
+#             for node in informed:
+#                 node_color = G.nodes[node]['color']
+#                 for neighbor in G.neighbors(node):
+#                     if neighbor in informed:
+#                         continue
+#                     neighbor_color = G.nodes[neighbor]['color']
+#                     prob = p if node_color == neighbor_color else (1 - p)
+#                     if random.random() < prob:
+#                         new_informed.add(neighbor)
+#
+#             if regulation_set:
+#                 new_informed |= regulation_set
+#
+#             informed = new_informed
+#             reds = sum(1 for n in informed if G.nodes[n]['color'] == 'red')
+#             yellows = sum(1 for n in informed if G.nodes[n]['color'] == 'yellow')
+#             history.append((reds, yellows))
+#
+#         return history
+#
+#     # =====================
+#     # Regulation functions
+#     # =====================
+#     def rlr_set(rho):
+#         return set(random.sample(list(G.nodes()), int(len(G) * rho)))
+#
+#     def blue_only_set(rho):
+#         yellow_nodes = [n for n in G.nodes if G.nodes[n]['color'] == 'yellow']
+#         return set(random.sample(yellow_nodes, int(len(yellow_nodes) * rho)))
+#
+#     # =====================
+#     # Averaging Function
+#     # =====================
+#     def average_spread(G, source_selector, p, steps=10, regulation_set_generator=None, runs=100):
+#         reds_all = np.zeros(steps)
+#         yellows_all = np.zeros(steps)
+#
+#         for _ in range(runs):
+#             source_nodes = source_selector()
+#             reg_set = regulation_set_generator() if regulation_set_generator else None
+#             history = spread_message(G, source_nodes, p, steps, regulation_set=reg_set)
+#             reds = np.array([r for r, y in history])
+#             yellows = np.array([y for r, y in history])
+#             reds_all += reds
+#             yellows_all += yellows
+#
+#         return reds_all / runs, yellows_all / runs
+#
+#     def select_random_reds(k=1):
+#         red_nodes = [n for n in G.nodes if G.nodes[n]['color'] == 'red']
+#         return random.sample(red_nodes, k)
+#
+#     # =====================
+#     # Run Scenarios
+#     # =====================
+#     scenarios = {
+#         "Strong No-Reg": (1.0, None),
+#         "p=0.7 No-Reg": (0.7, None),
+#         "Strong RLR(0.25)": (1.0, lambda: rlr_set(0.25)),
+#         "p=0.7 RLR(0.25)": (0.7, lambda: rlr_set(0.25)),
+#         "Strong BlueOnly(0.25)": (1.0, lambda: blue_only_set(0.25)),
+#         "p=0.7 BlueOnly(0.25)": (0.7, lambda: blue_only_set(0.25)),
+#     }
+#
+#     average_results = {}
+#     for label, (p_val, reg_fn) in scenarios.items():
+#         reds_avg, yellows_avg = average_spread(G, select_random_reds, p=p_val,
+#                                                regulation_set_generator=reg_fn, steps=10, runs=100)
+#         average_results[label] = (reds_avg, yellows_avg)
+#
+#     # =====================
+#     # Plot Results
+#     # =====================
+#     plt.figure(figsize=(10, 6))
+#     colors = {
+#         "p=0.7 No-Reg": "orange",
+#         "p=0.7 RLR(0.25)": "purple",
+#         "Strong No-Reg": "blue",
+#         "Strong RLR(0.25)": "green",
+#         "Strong BlueOnly(0.25)": "brown",
+#         "p=0.7 BlueOnly(0.25)": "red"
+#     }
+#
+#     for label, (reds, yellows) in average_results.items():
+#         plt.plot(reds, label=f"{label} – Red", linestyle='--', color=colors[label])
+#         plt.plot(yellows, label=f"{label} – Yellow", linestyle='-', color=colors[label])
+#
+#     plt.xlabel("Time Step")
+#     plt.ylabel("Average Informed Users")
+#     plt.title("Average Spread Over 100 Runs (with Regulation Support)")
+#     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+#     plt.tight_layout()
+#     plt.show()
+#
+#     # =====================
+#     # Compute Echo Chamber Metrics
+#     # =====================
+#     print("\n=== Echo Chamber Metrics ===")
+#     for label, (reds_avg, yellows_avg) in average_results.items():
+#         alpha = reds_avg[-1] + yellows_avg[-1]
+#         phi_red = reds_avg[-1] / alpha if alpha > 0 else 0
+#         phi_yellow = yellows_avg[-1] / alpha if alpha > 0 else 0
+#         print(f"{label}:")
+#         print(f"  α (size) = {alpha:.2f}, ϕ_red = {phi_red:.2f}, ϕ_yellow = {phi_yellow:.2f}")
+
 def spreading_mode(G):
     import pandas as pd
     import networkx as nx
@@ -974,7 +1193,7 @@ def spreading_mode(G):
         for node in G.nodes():
             in_edges = G.in_edges(node, data=True)
             if in_edges:
-                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                avg = sum(data.get('weight', 1.0) for _, _, data in in_edges) / len(in_edges)
                 node_avg_rating[node] = avg
             else:
                 node_avg_rating[node] = 0
@@ -1031,7 +1250,7 @@ def spreading_mode(G):
 
     def blue_only_set(rho):
         yellow_nodes = [n for n in G.nodes if G.nodes[n]['color'] == 'yellow']
-        return set(random.sample(yellow_nodes, int(len(yellow_nodes) * rho)))
+        return set(random.sample(yellow_nodes, int(len(yellow_nodes) * rho))) if yellow_nodes else set()
 
     # =====================
     # Averaging Function
@@ -1039,20 +1258,29 @@ def spreading_mode(G):
     def average_spread(G, source_selector, p, steps=10, regulation_set_generator=None, runs=100):
         reds_all = np.zeros(steps)
         yellows_all = np.zeros(steps)
+        valid_runs = 0
 
         for _ in range(runs):
             source_nodes = source_selector()
+            if not source_nodes:
+                continue  # skip if no red nodes
             reg_set = regulation_set_generator() if regulation_set_generator else None
             history = spread_message(G, source_nodes, p, steps, regulation_set=reg_set)
             reds = np.array([r for r, y in history])
             yellows = np.array([y for r, y in history])
             reds_all += reds
             yellows_all += yellows
+            valid_runs += 1
 
-        return reds_all / runs, yellows_all / runs
+        if valid_runs == 0:
+            return np.zeros(steps), np.zeros(steps)
+
+        return reds_all / valid_runs, yellows_all / valid_runs
 
     def select_random_reds(k=1):
         red_nodes = [n for n in G.nodes if G.nodes[n]['color'] == 'red']
+        if len(red_nodes) < k:
+            return []
         return random.sample(red_nodes, k)
 
     # =====================
@@ -1108,11 +1336,15 @@ def spreading_mode(G):
         print(f"{label}:")
         print(f"  α (size) = {alpha:.2f}, ϕ_red = {phi_red:.2f}, ϕ_yellow = {phi_yellow:.2f}")
 
-
 if __name__ == '__main__':
 
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
+
+    coloredG = build_cross_color_edges_graph(max_connected_component_graph)
+    degree_distributions(coloredG, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3)
+    degree_distributions(coloredG, degree_type='out', title='max_connected_component_graph', x_min=2, x_max=3)
+    degree_distributions(coloredG, degree_type='total', title='max_connected_component_graph', x_min=2, x_max=3)
 
     # min_rating, max_rating = min_max_rating(max_connected_component_graph)
     # print("min rating: ", min_rating, "\nmax rating: ", min_rating)
@@ -1149,4 +1381,9 @@ if __name__ == '__main__':
     # print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
     #       f"({equal_count} out of {total})")
 
-    spreading_mode(max_connected_component_graph)
+
+    # pre = build_preferential_attachment_model(max_connected_component_graph)
+    #
+    # spreading_mode(max_connected_component_graph)
+    #
+    # spreading_mode(pre)
