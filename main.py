@@ -1108,6 +1108,55 @@ def spreading_mode(G):
         print(f"{label}:")
         print(f"  α (size) = {alpha:.2f}, ϕ_red = {phi_red:.2f}, ϕ_yellow = {phi_yellow:.2f}")
 
+def count_zero_weight_edges(G):
+    count = sum(1 for _, _, data in G.edges(data=True) if data.get('weight') == 0)
+    print(f"Number of edges with weight 0: {count}")
+    return count
+
+def analyze_top10_pagerank_reciprocal(G, weight='weight', alpha=0.85, max_iter=500):
+
+    # נירמול המשקלים לערך מוחלט
+    for _, _, data in G.edges(data=True):
+        if weight in data:
+            data[weight] = abs(data[weight])
+
+    try:
+        pagerank_scores = nx.pagerank(G, weight=weight, alpha=alpha, max_iter=max_iter)
+    except nx.PowerIterationFailedConvergence:
+        print("⚠️ Power iteration did not converge with weights. Retrying without weights...")
+        pagerank_scores = nx.pagerank(G, weight=None, alpha=alpha, max_iter=max_iter)
+
+    # מיון הקודקודים לפי PageRank מהגבוה לנמוך
+    sorted_scores = sorted(pagerank_scores.items(), key=lambda x: x[1], reverse=True)
+
+    top10 = sorted_scores[:10]
+
+    print("Top 10 nodes by PageRank:")
+    for node, score in top10:
+        print(f"Node {node}: PageRank = {score:.5f}")
+
+    print("\nCalculating reciprocal edge percentages...\n")
+
+    for node, _ in top10:
+        out_edges = list(G.out_edges(node, data=True))
+        if not out_edges:
+            pct = 0.0
+        else:
+            reciprocal_count = 0
+            total_out = len(out_edges)
+            for u, v, data in out_edges:
+                w = data.get(weight, None)
+                if w is None:
+                    continue
+                if G.has_edge(v, u):
+                    w_back = G[v][u].get(weight, None)
+                    if w_back == w:
+                        reciprocal_count += 1
+            pct = (reciprocal_count / total_out) * 100
+
+        print(f"Node {node}: {pct:.2f}% of out-edges are reciprocated with the same weight")
+
+
 
 if __name__ == '__main__':
 
@@ -1149,4 +1198,7 @@ if __name__ == '__main__':
     # print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
     #       f"({equal_count} out of {total})")
 
-    spreading_mode(max_connected_component_graph)
+    # spreading_mode(max_connected_component_graph)
+    # count_zero_weight_edges(max_connected_component_graph)
+
+    analyze_top10_pagerank_reciprocal(max_connected_component_graph)
