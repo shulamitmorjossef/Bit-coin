@@ -853,7 +853,7 @@ def get_color(avg):
         return 'yellow'
     else:
         return 'blue'
-# TODO check num of edges w weight = 0
+
 def compute_symmetric_edge_percentages_by_color(G):
     # TODO check sum of edges sum to to total edges
     node_avg_rating = compute_average_rating(G)
@@ -1026,6 +1026,66 @@ def build_cross_color_edges_graph(G):
 
     return cross_color_G
 
+def compute_symmetric_edge_percentage_by_sign(G):
+    if not G.is_directed():
+        raise ValueError("Graph must be directed.")
+
+    pos_total = 0
+    pos_symmetric_edges = 0  # ספירת קשתות סימטריות עם משקל חיובי
+
+    neg_total = 0
+    neg_symmetric_edges = 0  # ספירת קשתות סימטריות עם משקל שלילי
+
+    checked_pairs = set()
+
+    for u, v, data in G.edges(data=True):
+        weight = data.get('weight')
+        if weight is None:
+            continue
+
+        # סופרים את הקשת ככולה
+        if weight > 0:
+            pos_total += 1
+        elif weight < 0:
+            neg_total += 1
+        else:
+            continue  # משקל 0 - מתעלמים
+
+        # בודקים אם כבר סקרנו את הזוג ההפוך, כדי למנוע ספירה כפולה
+        if (v, u) in checked_pairs:
+            continue
+
+        # בודקים אם קיימת קשת הפוכה עם אותו משקל
+        if G.has_edge(v, u):
+            rev_weight = G[v][u].get('weight')
+            if rev_weight == weight:
+                # סימטריה - מוסיפים פעמיים כי זו זוג קשתות סימטריות
+                if weight > 0:
+                    pos_symmetric_edges += 2
+                else:
+                    neg_symmetric_edges += 2
+
+        checked_pairs.add((u, v))
+        checked_pairs.add((v, u))
+
+    pos_percent = (pos_symmetric_edges / pos_total * 100) if pos_total > 0 else 0
+    neg_percent = (neg_symmetric_edges / neg_total * 100) if neg_total > 0 else 0
+
+    print(f"POSITIVE — Symmetric edges: {pos_symmetric_edges}/{pos_total} ({pos_percent:.2f}%)")
+    print(f"NEGATIVE — Symmetric edges: {neg_symmetric_edges}/{neg_total} ({neg_percent:.2f}%)")
+
+    return {
+        'positive': {
+            'total_edges': pos_total,
+            'symmetric_edges': pos_symmetric_edges,
+            'percentage': pos_percent
+        },
+        'negative': {
+            'total_edges': neg_total,
+            'symmetric_edges': neg_symmetric_edges,
+            'percentage': neg_percent
+        }
+    }
 
 # def spreading_mode(G):
 #     import pandas as pd
@@ -1391,6 +1451,8 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
+    compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
+
     # coloredG = build_cross_color_edges_graph(max_connected_component_graph)
     # degree_distributions(coloredG, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3)
     # degree_distributions(coloredG, degree_type='out', title='max_connected_component_graph', x_min=2, x_max=3)
@@ -1434,7 +1496,7 @@ if __name__ == '__main__':
     # spreading_mode(max_connected_component_graph)
     # count_zero_weight_edges(max_connected_component_graph)
 
-    analyze_top10_pagerank_reciprocal(max_connected_component_graph)
+    # analyze_top10_pagerank_reciprocal(max_connected_component_graph)
 
     # pre = build_preferential_attachment_model(max_connected_component_graph)
     #
