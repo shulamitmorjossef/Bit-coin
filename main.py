@@ -1494,6 +1494,7 @@ def analyze_top10_pagerank_reciprocal_by_sign(G, weight='weight', alpha=0.85, ma
 
 if __name__ == '__main__':
 
+
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
@@ -1544,6 +1545,7 @@ if __name__ == '__main__':
 
     # analyze_top10_pagerank_reciprocal(max_connected_component_graph)
     analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
+
 
     # pre = build_preferential_attachment_model(max_connected_component_graph)
     #
