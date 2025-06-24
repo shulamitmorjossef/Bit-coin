@@ -1512,7 +1512,8 @@ def analyze_top10_pagerank_reciprocal_by_sign(G, weight='weight', alpha=0.85, ma
             pos_pct = neg_pct = 0.0
 
         print(f"Node {node}: {pos_pct:.2f}% positive reciprocal, {neg_pct:.2f}% negative reciprocal")
-
+# TODO do venn diagram w clo bet  and pagerank
+# TODO  do degree distribution to negative graph of -10 edges only
 
 if __name__ == '__main__':
 
@@ -1520,7 +1521,7 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
+    # compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
 
     # coloredG = build_cross_color_edges_graph(max_connected_component_graph)
     # degree_distributions(coloredG, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3)
@@ -1558,19 +1559,20 @@ if __name__ == '__main__':
     # split_graph_by_color(max_connected_component_graph)
 
     # check_symmetric_edge_percentages_all_colors(max_connected_component_graph)
-    # percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
-    # print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
-    #       f"({equal_count} out of {total})")
+    percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
+    print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
+          f"({equal_count} out of {total})")
 
     # spreading_mode(max_connected_component_graph)
     # count_zero_weight_edges(max_connected_component_graph)
 
     # analyze_top10_pagerank_reciprocal(max_connected_component_graph)
     analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
-
+    # directed_graph_modularity(max_connected_component_graph)
 
     # pre = build_preferential_attachment_model(max_connected_component_graph)
     #
     # spreading_mode(max_connected_component_graph)
     #
     # spreading_mode(pre)
+
