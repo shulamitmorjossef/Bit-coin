@@ -12,6 +12,10 @@ from scipy.stats import linregress
 from collections import defaultdict
 
 
+import networkx as nx
+from networkx.algorithms.community import greedy_modularity_communities, modularity
+
+
 def build_original_graph():
 
     # path to the folder containing the files
@@ -1109,6 +1113,101 @@ def compute_symmetric_edge_percentage_by_sign(G):
         }
     }
 
+def directed_graph_modularity_with_communities(G: nx.DiGraph, use_weights=True):
+    """
+    Detects communities in a directed graph (by temporarily converting it to undirected),
+    computes the modularity score, and returns both the score and the community structure.
+
+    :param G: A directed NetworkX graph (DiGraph)
+    :param use_weights: Whether to use edge weights
+    :return: tuple:
+        - modularity_score (float): the modularity value
+        - community_dict (dict): mapping of node -> community index
+        - communities (list of sets): list of communities as sets of nodes
+    """
+    # Convert to undirected graph for community detection
+    G_undirected = G.to_undirected()
+
+    # Detect communities using the greedy modularity algorithm
+    communities = list(
+        greedy_modularity_communities(
+            G_undirected,
+            weight='weight' if use_weights else None
+        )
+    )
+
+    # Compute modularity using the original directed graph
+    modularity_score = modularity(
+        G,
+        communities,
+        weight='weight' if use_weights else None
+    )
+
+    # Build node -> community mapping
+    community_dict = {}
+    for i, comm in enumerate(communities):
+        for node in comm:
+            community_dict[node] = i
+
+    print(f"Modularity: {modularity_score:.4f}")
+    print(f"Number of communities: {len(communities)}")
+    # for i, comm in enumerate(communities):
+        # print(f"Community {i + 1}: {sorted(comm)}")
+
+    return modularity_score, community_dict, communities
+
+def remove_node_from_graph(G: nx.Graph, node_id):
+    """
+    Returns a copy of the graph without the specified node.
+
+    :param G: NetworkX graph (can be directed or undirected)
+    :param node_id: the node to remove
+    :return: a new graph without the given node
+    """
+    if node_id not in G:
+        raise ValueError(f"Node {node_id} does not exist in the graph.")
+
+    G_copy = G.copy()
+    G_copy.remove_node(node_id)
+    return G_copy
+
+
+import networkx as nx
+import matplotlib.pyplot as plt
+
+def filter_graph_by_weight_and_analyze(G: nx.DiGraph, target_weight=-10):
+    """
+    Filters the graph to only edges with the specified weight (default -10),
+    and draws a simple, clean visualization.
+
+    :param G: A directed NetworkX graph with weights
+    :param target_weight: The specific weight to filter edges by
+    :return: The filtered graph
+    """
+
+    # Filter edges by weight
+    filtered_G = nx.DiGraph()
+    for u, v, data in G.edges(data=True):
+        if data.get('weight') == target_weight:
+            filtered_G.add_edge(u, v)
+
+    filtered_G = filtered_G.subgraph(set(filtered_G.nodes)).copy()
+
+    print(f"\nFiltered Graph: {filtered_G.number_of_nodes()} nodes, {filtered_G.number_of_edges()} edges")
+
+    # Draw the graph - clean version
+    plt.figure(figsize=(10, 8))
+    pos = nx.spring_layout(filtered_G, seed=42)
+    nx.draw_networkx_nodes(filtered_G, pos, node_color='red', node_size=80)
+    nx.draw_networkx_edges(filtered_G, pos, edge_color='gray', arrows=True, arrowstyle='->', width=1)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+    return filtered_G
+
+
+
 # def spreading_mode(G):
 #     import pandas as pd
 #     import networkx as nx
@@ -1519,7 +1618,24 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
+    filter_graph_by_weight_and_analyze(max_connected_component_graph)
+
+    # mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
+
+    # print(f"Total number of communities: {len(comms)}")
+    #
+    # for i, comm in enumerate(comms, start=1):
+    #     print(f"Community {i} has {len(comm)} nodes")
+
+    # compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
+
+
+    # new_G = remove_node_from_graph(max_connected_component_graph, 3744)
+
+
+
+    # print(directed_graph_modularity(max_connected_component_graph))
+
 
     # coloredG = build_cross_color_edges_graph(max_connected_component_graph)
     # degree_distributions(coloredG, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3)
@@ -1565,7 +1681,7 @@ if __name__ == '__main__':
     # count_zero_weight_edges(max_connected_component_graph)
 
     # analyze_top10_pagerank_reciprocal(max_connected_component_graph)
-    analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
+    # analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
 
     # pre = build_preferential_attachment_model(max_connected_component_graph)
     #
