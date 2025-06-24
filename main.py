@@ -282,21 +282,21 @@ def degree_distributions(G, degree_type='in', title=' ', x_min=None, x_max=None,
     plt.show()
 
 def all_degree_distributions(G):
-    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=3, color='blue')
-    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=3, color='blue')
-    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=3, color='blue')
+    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3, color='blue')
+    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=2, x_max=3, color='blue')
+    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=2, x_max=3, color='blue')
 
-    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=3, color='red')
-    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=3, color='red')
-    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=3, color='red')
+    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=1, x_max=3, color='red')
+    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=1, x_max=3, color='red')
+    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=1, x_max=3, color='red')
 
-    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=3, color='yellow')
-    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=3, color='yellow')
-    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=3, color='yellow')
+    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3, color='yellow')
+    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=2, x_max=3, color='yellow')
+    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=2, x_max=3, color='yellow')
 
-    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=3)
-    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=3)
-    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=3)
+    degree_distributions(G, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3)
+    degree_distributions(G, degree_type='out', title='max_connected_component_graph', x_min=2, x_max=3)
+    degree_distributions(G, degree_type='total', title='max_connected_component_graph', x_min=2, x_max=3)
 
 def centrality(G):
     closeness_centrality = nx.closeness_centrality(G)
@@ -1618,7 +1618,7 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    filter_graph_by_weight_and_analyze(max_connected_component_graph)
+    # filter_graph_by_weight_and_analyze(max_connected_component_graph)
 
     # mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
 
@@ -1646,7 +1646,7 @@ if __name__ == '__main__':
     # print("min rating: ", min_rating, "\nmax rating: ", min_rating)
 
     # centrality(max_connected_component_graph)
-    # draw_graph(max_connected_component_graph)
+    # draw_graph(G)
 
     # draw_rating_histogram(max_connected_component_graph)
 
