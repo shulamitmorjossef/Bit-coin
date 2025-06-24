@@ -323,25 +323,88 @@ def centrality(G):
     draw_centrality(closeness_centrality, "Closeness", -1, 0)
     draw_centrality(betweenness_centrality, "Betweenness", -5, -1)
 
-def compare_centrality(G):
-    # Calculate centrality measures
-    in_deg_centrality = nx.in_degree_centrality(G)
-    out_deg_centrality = nx.out_degree_centrality(G)
+# def compare_centrality(G):
+#     # Calculate centrality measures
+#     in_deg_centrality = nx.in_degree_centrality(G)
+#     out_deg_centrality = nx.out_degree_centrality(G)
+#     betweenness_centrality = nx.betweenness_centrality(G)
+#     closeness_centrality = nx.closeness_centrality(G)
+#
+#     # Get the top 10 nodes with the highest values for each centrality measure
+#     top_in = sorted(in_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+#     top_out = sorted(out_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+#     top_betweenness = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+#     top_closeness = sorted(closeness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+#
+#     # Print the top 10 nodes for each centrality measure, sorted by centrality value (highest to lowest)
+#     print("\nTop 10 In-Degree Centrality Nodes:")
+#     print([node for node, _ in top_in])
+#
+#     print("\nTop 10 Out-Degree Centrality Nodes:")
+#     print([node for node, _ in top_out])
+#
+#     print("\nTop 10 Betweenness Centrality Nodes:")
+#     print([node for node, _ in top_betweenness])
+#
+#     print("\nTop 10 Closeness Centrality Nodes:")
+#     print([node for node, _ in top_closeness])
+#
+#     # Plot the Venn diagram showing overlaps between the top 10 nodes for each centrality measure
+#     plt.figure(figsize=(5, 3))
+#     venn = venn3([set(node for node, _ in top_out),
+#                   set(node for node, _ in top_betweenness),
+#                   set(node for node, _ in top_closeness)],
+#                  set_labels=("Out-Degree", "Betweenness", "Closeness"))
+#
+#     # Define the colors for the Venn diagram with stronger contrast
+#     venn.get_patch_by_id('100').set_facecolor('#1f77b4')  # Dark blue
+#     venn.get_patch_by_id('010').set_facecolor('#ff7f0e')  # Orange
+#     venn.get_patch_by_id('001').set_facecolor('#2ca02c')  # Green
+#     venn.get_patch_by_id('110').set_facecolor('#9467bd')  # Purple
+#     venn.get_patch_by_id('101').set_facecolor('#8c564b')  # Brown
+#     venn.get_patch_by_id('011').set_facecolor('#e377c2')  # Pink
+#     venn.get_patch_by_id('111').set_facecolor('#7f7f7f')  # Grey
+#
+#     # Remove the numbers inside the Venn diagram
+#     for v in venn.subset_labels:
+#         v.set_text('')
+#
+#     plt.title("Top 10 Centrality Nodes Overlap")
+#     plt.tight_layout()
+#     plt.show()
+
+
+def compare_centrality(G, weight='weight', alpha=0.85, max_iter=100):
+    def compute_top_pagerank_nodes(G, weight, alpha, max_iter, top_k=10):
+        # שימוש במשקלים מוחלטים
+        G_abs = G.copy()
+        for u, v, data in G_abs.edges(data=True):
+            if weight in data:
+                data[weight] = abs(data[weight])
+
+        try:
+            pagerank_scores = nx.pagerank(G_abs, weight=weight, alpha=alpha, max_iter=max_iter)
+        except nx.PowerIterationFailedConvergence:
+            print("⚠️ Power iteration did not converge with weights. Retrying without weights...")
+            pagerank_scores = nx.pagerank(G_abs, weight=None, alpha=alpha, max_iter=max_iter)
+
+        sorted_scores = sorted(pagerank_scores.items(), key=lambda x: x[1], reverse=True)
+        return sorted_scores[:top_k]
+
+    # חישובי מרכזיות אחרים
     betweenness_centrality = nx.betweenness_centrality(G)
     closeness_centrality = nx.closeness_centrality(G)
 
-    # Get the top 10 nodes with the highest values for each centrality measure
-    top_in = sorted(in_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-    top_out = sorted(out_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_pagerank = compute_top_pagerank_nodes(G, weight, alpha, max_iter)
     top_betweenness = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
     top_closeness = sorted(closeness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
 
-    # Print the top 10 nodes for each centrality measure, sorted by centrality value (highest to lowest)
-    print("\nTop 10 In-Degree Centrality Nodes:")
-    print([node for node, _ in top_in])
 
-    print("\nTop 10 Out-Degree Centrality Nodes:")
-    print([node for node, _ in top_out])
+    print("\nTop 10 PageRank Nodes:")
+    # for node, score in top_pagerank:
+    #     print(f"Node {node}: PageRank = {score:.5f}")
+    print([node for node, _ in top_pagerank])
+
 
     print("\nTop 10 Betweenness Centrality Nodes:")
     print([node for node, _ in top_betweenness])
@@ -349,25 +412,26 @@ def compare_centrality(G):
     print("\nTop 10 Closeness Centrality Nodes:")
     print([node for node, _ in top_closeness])
 
-    # Plot the Venn diagram showing overlaps between the top 10 nodes for each centrality measure
+    # Venn Diagram
     plt.figure(figsize=(5, 3))
-    venn = venn3([set(node for node, _ in top_out),
+    venn = venn3([set(node for node, _ in top_pagerank),
                   set(node for node, _ in top_betweenness),
                   set(node for node, _ in top_closeness)],
-                 set_labels=("Out-Degree", "Betweenness", "Closeness"))
+                 set_labels=("PageRank", "Betweenness", "Closeness"))
 
-    # Define the colors for the Venn diagram with stronger contrast
-    venn.get_patch_by_id('100').set_facecolor('#1f77b4')  # Dark blue
-    venn.get_patch_by_id('010').set_facecolor('#ff7f0e')  # Orange
-    venn.get_patch_by_id('001').set_facecolor('#2ca02c')  # Green
-    venn.get_patch_by_id('110').set_facecolor('#9467bd')  # Purple
-    venn.get_patch_by_id('101').set_facecolor('#8c564b')  # Brown
-    venn.get_patch_by_id('011').set_facecolor('#e377c2')  # Pink
-    venn.get_patch_by_id('111').set_facecolor('#7f7f7f')  # Grey
+    colors = {
+        '100': '#1f77b4', '010': '#ff7f0e', '001': '#2ca02c',
+        '110': '#9467bd', '101': '#8c564b', '011': '#e377c2', '111': '#7f7f7f'
+    }
 
-    # Remove the numbers inside the Venn diagram
-    for v in venn.subset_labels:
-        v.set_text('')
+    for subset_id, color in colors.items():
+        patch = venn.get_patch_by_id(subset_id)
+        if patch:
+            patch.set_facecolor(color)
+
+    for label in venn.subset_labels:
+        if label:
+            label.set_text('')
 
     plt.title("Top 10 Centrality Nodes Overlap")
     plt.tight_layout()
@@ -1171,31 +1235,17 @@ def remove_node_from_graph(G: nx.Graph, node_id):
     G_copy.remove_node(node_id)
     return G_copy
 
-
-import networkx as nx
-import matplotlib.pyplot as plt
-
-def filter_graph_by_weight_and_analyze(G: nx.DiGraph, target_weight=-10):
-    """
-    Filters the graph to only edges with the specified weight (default -10),
-    and draws a simple, clean visualization.
-
-    :param G: A directed NetworkX graph with weights
-    :param target_weight: The specific weight to filter edges by
-    :return: The filtered graph
-    """
-
-    # Filter edges by weight
+def build_graph_weight_eq_to_target_only(G: nx.DiGraph, target_weight=-10):
     filtered_G = nx.DiGraph()
     for u, v, data in G.edges(data=True):
         if data.get('weight') == target_weight:
-            filtered_G.add_edge(u, v)
+            filtered_G.add_edge(u, v, weight=target_weight)  # שמירת המשקל
 
     filtered_G = filtered_G.subgraph(set(filtered_G.nodes)).copy()
 
     print(f"\nFiltered Graph: {filtered_G.number_of_nodes()} nodes, {filtered_G.number_of_edges()} edges")
 
-    # Draw the graph - clean version
+    # ציור גרף
     plt.figure(figsize=(10, 8))
     pos = nx.spring_layout(filtered_G, seed=42)
     nx.draw_networkx_nodes(filtered_G, pos, node_color='red', node_size=80)
@@ -1612,13 +1662,21 @@ def analyze_top10_pagerank_reciprocal_by_sign(G, weight='weight', alpha=0.85, ma
 
         print(f"Node {node}: {pos_pct:.2f}% positive reciprocal, {neg_pct:.2f}% negative reciprocal")
 
+def degree_distribution_negative_graph(G):
+
+    n_g = build_graph_weight_eq_to_target_only(G)
+
+    degree_distributions(n_g, degree_type='in', title='max_connected_component_graph', x_min=1, x_max=2)
+    degree_distributions(n_g, degree_type='out', title='max_connected_component_graph', x_min=1, x_max=3)
+    degree_distributions(n_g, degree_type='total', title='max_connected_component_graph', x_min=1, x_max=3)
+
+# TODO do venn diagram w clo bet  and pagerank
 
 if __name__ == '__main__':
 
+
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
-
-    # filter_graph_by_weight_and_analyze(max_connected_component_graph)
 
     # mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
 
@@ -1646,7 +1704,7 @@ if __name__ == '__main__':
     # print("min rating: ", min_rating, "\nmax rating: ", min_rating)
 
     # centrality(max_connected_component_graph)
-    # draw_graph(G)
+    # draw_graph(max_connected_component_graph)
 
     # draw_rating_histogram(max_connected_component_graph)
 
