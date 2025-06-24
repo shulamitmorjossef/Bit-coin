@@ -5,6 +5,9 @@ from matplotlib_venn import venn3
 import math
 import numpy as np
 import random
+
+from networkx.algorithms.community.modularity_max import greedy_modularity_communities
+from networkx.algorithms.community.quality import modularity
 from scipy.stats import linregress
 from collections import defaultdict
 
@@ -902,6 +905,25 @@ def compute_equal_in_out_degree_percentage(G):
 
     percentage = (count_equal / total_nodes * 100) if total_nodes > 0 else 0
     return percentage, count_equal, total_nodes
+
+def directed_graph_modularity(G: nx.DiGraph, use_weights=True):
+        """
+        מקבלת גרף מכוון, מזהה קהילות ומחזירה את המודולריות שלהן.
+
+        :param G: גרף מכוון (nx.DiGraph)
+        :param use_weights: האם להשתמש במשקלים
+        :return: ערך המודולריות (float)
+        """
+        # יוצרים גרף לא מכוון לצורך גילוי קהילות (אלגוריתם greedy לא עובד על גרפים מכוונים)
+        G_undirected = G.to_undirected()
+
+        # זיהוי קהילות באמצעות greedy modularity
+        communities = list(greedy_modularity_communities(G_undirected, weight='weight' if use_weights else None))
+
+        # חישוב מודולריות לפי הגרף המקורי (המכוון)
+        mod = modularity(G, communities, weight='weight' if use_weights else None)
+
+        return mod
 
 
 # -----------------------------------------------------------------
