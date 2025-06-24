@@ -1466,6 +1466,52 @@ def analyze_top10_pagerank_reciprocal(G, weight='weight', alpha=0.85, max_iter=5
 
         print(f"Node {node}: {pct:.2f}% of out-edges are reciprocated with the same weight")
 
+def analyze_top10_pagerank_reciprocal_by_sign(G, weight='weight', alpha=0.85, max_iter=500):
+    # שמירה על משקלים מקוריים לשם ניתוח החיוביים והשליליים
+    G_abs = G.copy()
+    for u, v, data in G_abs.edges(data=True):
+        if weight in data:
+            data[weight] = abs(data[weight])
+
+    try:
+        pagerank_scores = nx.pagerank(G_abs, weight=weight, alpha=alpha, max_iter=max_iter)
+    except nx.PowerIterationFailedConvergence:
+        print("⚠️ Power iteration did not converge with weights. Retrying without weights...")
+        pagerank_scores = nx.pagerank(G_abs, weight=None, alpha=alpha, max_iter=max_iter)
+
+    sorted_scores = sorted(pagerank_scores.items(), key=lambda x: x[1], reverse=True)
+    top10 = sorted_scores[:10]
+
+    print("Top 10 nodes by PageRank:")
+    for node, score in top10:
+        print(f"Node {node}: PageRank = {score:.5f}")
+
+    print("\nCalculating reciprocal edge sign percentages...\n")
+
+    for node, _ in top10:
+        out_edges = list(G.out_edges(node, data=True))
+        total_out = len(out_edges)
+        pos_reciprocal = 0
+        neg_reciprocal = 0
+
+        for u, v, data in out_edges:
+            w = data.get(weight, None)
+            if w is None:
+                continue
+            if G.has_edge(v, u):
+                w_back = G[v][u].get(weight, None)
+                if w_back == w and w > 0:
+                    pos_reciprocal += 1
+                elif w_back == w and w < 0:
+                    neg_reciprocal += 1
+
+        if total_out > 0:
+            pos_pct = (pos_reciprocal / total_out) * 100
+            neg_pct = (neg_reciprocal / total_out) * 100
+        else:
+            pos_pct = neg_pct = 0.0
+
+        print(f"Node {node}: {pos_pct:.2f}% positive reciprocal, {neg_pct:.2f}% negative reciprocal")
 
 
 if __name__ == '__main__':
@@ -1519,6 +1565,7 @@ if __name__ == '__main__':
     # count_zero_weight_edges(max_connected_component_graph)
 
     # analyze_top10_pagerank_reciprocal(max_connected_component_graph)
+    analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
 
     # pre = build_preferential_attachment_model(max_connected_component_graph)
     #
