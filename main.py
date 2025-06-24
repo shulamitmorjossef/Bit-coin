@@ -323,57 +323,6 @@ def centrality(G):
     draw_centrality(closeness_centrality, "Closeness", -1, 0)
     draw_centrality(betweenness_centrality, "Betweenness", -5, -1)
 
-# def compare_centrality(G):
-#     # Calculate centrality measures
-#     in_deg_centrality = nx.in_degree_centrality(G)
-#     out_deg_centrality = nx.out_degree_centrality(G)
-#     betweenness_centrality = nx.betweenness_centrality(G)
-#     closeness_centrality = nx.closeness_centrality(G)
-#
-#     # Get the top 10 nodes with the highest values for each centrality measure
-#     top_in = sorted(in_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-#     top_out = sorted(out_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-#     top_betweenness = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-#     top_closeness = sorted(closeness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-#
-#     # Print the top 10 nodes for each centrality measure, sorted by centrality value (highest to lowest)
-#     print("\nTop 10 In-Degree Centrality Nodes:")
-#     print([node for node, _ in top_in])
-#
-#     print("\nTop 10 Out-Degree Centrality Nodes:")
-#     print([node for node, _ in top_out])
-#
-#     print("\nTop 10 Betweenness Centrality Nodes:")
-#     print([node for node, _ in top_betweenness])
-#
-#     print("\nTop 10 Closeness Centrality Nodes:")
-#     print([node for node, _ in top_closeness])
-#
-#     # Plot the Venn diagram showing overlaps between the top 10 nodes for each centrality measure
-#     plt.figure(figsize=(5, 3))
-#     venn = venn3([set(node for node, _ in top_out),
-#                   set(node for node, _ in top_betweenness),
-#                   set(node for node, _ in top_closeness)],
-#                  set_labels=("Out-Degree", "Betweenness", "Closeness"))
-#
-#     # Define the colors for the Venn diagram with stronger contrast
-#     venn.get_patch_by_id('100').set_facecolor('#1f77b4')  # Dark blue
-#     venn.get_patch_by_id('010').set_facecolor('#ff7f0e')  # Orange
-#     venn.get_patch_by_id('001').set_facecolor('#2ca02c')  # Green
-#     venn.get_patch_by_id('110').set_facecolor('#9467bd')  # Purple
-#     venn.get_patch_by_id('101').set_facecolor('#8c564b')  # Brown
-#     venn.get_patch_by_id('011').set_facecolor('#e377c2')  # Pink
-#     venn.get_patch_by_id('111').set_facecolor('#7f7f7f')  # Grey
-#
-#     # Remove the numbers inside the Venn diagram
-#     for v in venn.subset_labels:
-#         v.set_text('')
-#
-#     plt.title("Top 10 Centrality Nodes Overlap")
-#     plt.tight_layout()
-#     plt.show()
-
-
 def compare_centrality(G, weight='weight', alpha=0.85, max_iter=100):
     def compute_top_pagerank_nodes(G, weight, alpha, max_iter, top_k=10):
         # שימוש במשקלים מוחלטים
@@ -436,7 +385,6 @@ def compare_centrality(G, weight='weight', alpha=0.85, max_iter=100):
     plt.title("Top 10 Centrality Nodes Overlap")
     plt.tight_layout()
     plt.show()
-
 
 def power_law_no_binning(G, show_fit=False, color=None):
     import warnings
@@ -1670,13 +1618,14 @@ def degree_distribution_negative_graph(G):
     degree_distributions(n_g, degree_type='out', title='max_connected_component_graph', x_min=1, x_max=3)
     degree_distributions(n_g, degree_type='total', title='max_connected_component_graph', x_min=1, x_max=3)
 
-# TODO do venn diagram w clo bet  and pagerank
-
 if __name__ == '__main__':
 
 
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
+    # draw_graph(G)
+    # draw_graph(max_connected_component_graph)
+
 
     # compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
 
@@ -1706,7 +1655,6 @@ if __name__ == '__main__':
     # print("min rating: ", min_rating, "\nmax rating: ", min_rating)
 
     # centrality(max_connected_component_graph)
-    # draw_graph(max_connected_component_graph)
 
     # draw_rating_histogram(max_connected_component_graph)
 
@@ -1714,7 +1662,7 @@ if __name__ == '__main__':
     # all_degree_distributions(max_connected_component_graph)
 
 
-    compare_centrality(max_connected_component_graph)
+    # compare_centrality(max_connected_component_graph)
     # density(max_connected_component_graph)
     # small_world(max_connected_component_graph)
     # overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
@@ -1733,9 +1681,9 @@ if __name__ == '__main__':
     # split_graph_by_color(max_connected_component_graph)
 
     # check_symmetric_edge_percentages_all_colors(max_connected_component_graph)
-    percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
-    print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
-          f"({equal_count} out of {total})")
+    # percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
+    # print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
+    #       f"({equal_count} out of {total})")
 
     # spreading_mode(max_connected_component_graph)
     # count_zero_weight_edges(max_connected_component_graph)
@@ -1751,6 +1699,6 @@ if __name__ == '__main__':
     #
     # spreading_mode(pre)
 
-    # degree_distribution_negative_graph(max_connected_component_graph)
+    degree_distribution_negative_graph(max_connected_component_graph)
 
 
