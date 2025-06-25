@@ -11,8 +11,6 @@ from networkx.algorithms.community.quality import modularity
 from scipy.stats import linregress
 from collections import defaultdict
 
-
-import networkx as nx
 from networkx.algorithms.community import greedy_modularity_communities, modularity
 
 
@@ -996,6 +994,7 @@ def directed_graph_modularity(G: nx.DiGraph, use_weights=True):
 
 # -----------------------------------------------------------------
 # draw 3 graphes - 3 colores
+
 def split_graph_by_color(G):
     def compute_average_rating(G):
         node_avg_rating = {}
@@ -1678,7 +1677,7 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    # mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
+    mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
 
     # print(f"Total number of communities: {len(comms)}")
     #
