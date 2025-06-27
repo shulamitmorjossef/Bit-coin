@@ -5,6 +5,7 @@ from matplotlib_venn import venn3
 import math
 import numpy as np
 import random
+import powerlaw
 
 from networkx.algorithms.community.modularity_max import greedy_modularity_communities
 from networkx.algorithms.community.quality import modularity
@@ -307,70 +308,19 @@ def centrality(G):
 
         bins = np.logspace(min_exp, max_exp, num=20)
 
-        plt.figure(figsize=(12, 6), facecolor='black')
-        plt.hist(values, bins=bins, color='blueviolet', edgecolor='cyan')
+        plt.figure(figsize=(12, 6), facecolor='white')
+        plt.hist(values, bins=bins, color='salmon', edgecolor='cyan')
         plt.xscale('log')
-        plt.xlabel(f"{title} Centrality (log scale)", color='white')
-        plt.ylabel("Number of Nodes", color='white')
-        plt.title(f"Distribution of {title} Centrality", color='white')
-        plt.tick_params(colors='white')
+        plt.xlabel(f"{title} Centrality (log scale)", color='black')
+        plt.ylabel("Number of Nodes", color='black')
+        plt.title(f"Distribution of {title} Centrality", color='black')
+        plt.tick_params(colors='black')
         plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
         plt.tight_layout()
         plt.show()
 
     draw_centrality(closeness_centrality, "Closeness", -1, 0)
     draw_centrality(betweenness_centrality, "Betweenness", -5, -1)
-
-# def compare_centrality(G):
-#     # Calculate centrality measures
-#     in_deg_centrality = nx.in_degree_centrality(G)
-#     out_deg_centrality = nx.out_degree_centrality(G)
-#     betweenness_centrality = nx.betweenness_centrality(G)
-#     closeness_centrality = nx.closeness_centrality(G)
-#
-#     # Get the top 10 nodes with the highest values for each centrality measure
-#     top_in = sorted(in_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-#     top_out = sorted(out_deg_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-#     top_betweenness = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-#     top_closeness = sorted(closeness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-#
-#     # Print the top 10 nodes for each centrality measure, sorted by centrality value (highest to lowest)
-#     print("\nTop 10 In-Degree Centrality Nodes:")
-#     print([node for node, _ in top_in])
-#
-#     print("\nTop 10 Out-Degree Centrality Nodes:")
-#     print([node for node, _ in top_out])
-#
-#     print("\nTop 10 Betweenness Centrality Nodes:")
-#     print([node for node, _ in top_betweenness])
-#
-#     print("\nTop 10 Closeness Centrality Nodes:")
-#     print([node for node, _ in top_closeness])
-#
-#     # Plot the Venn diagram showing overlaps between the top 10 nodes for each centrality measure
-#     plt.figure(figsize=(5, 3))
-#     venn = venn3([set(node for node, _ in top_out),
-#                   set(node for node, _ in top_betweenness),
-#                   set(node for node, _ in top_closeness)],
-#                  set_labels=("Out-Degree", "Betweenness", "Closeness"))
-#
-#     # Define the colors for the Venn diagram with stronger contrast
-#     venn.get_patch_by_id('100').set_facecolor('#1f77b4')  # Dark blue
-#     venn.get_patch_by_id('010').set_facecolor('#ff7f0e')  # Orange
-#     venn.get_patch_by_id('001').set_facecolor('#2ca02c')  # Green
-#     venn.get_patch_by_id('110').set_facecolor('#9467bd')  # Purple
-#     venn.get_patch_by_id('101').set_facecolor('#8c564b')  # Brown
-#     venn.get_patch_by_id('011').set_facecolor('#e377c2')  # Pink
-#     venn.get_patch_by_id('111').set_facecolor('#7f7f7f')  # Grey
-#
-#     # Remove the numbers inside the Venn diagram
-#     for v in venn.subset_labels:
-#         v.set_text('')
-#
-#     plt.title("Top 10 Centrality Nodes Overlap")
-#     plt.tight_layout()
-#     plt.show()
-
 
 def compare_centrality(G, weight='weight', alpha=0.85, max_iter=100):
     def compute_top_pagerank_nodes(G, weight, alpha, max_iter, top_k=10):
@@ -435,7 +385,7 @@ def compare_centrality(G, weight='weight', alpha=0.85, max_iter=100):
     plt.tight_layout()
     plt.show()
 
-def power_law_no_binning(G, show_fit=False, color=None):
+def power_law_no_binning(G, show_fit=True, color=None):
     import warnings
     warnings.filterwarnings("ignore")
 
@@ -508,7 +458,7 @@ def power_law_no_binning(G, show_fit=False, color=None):
     plt.tight_layout()
     plt.show()
 
-def power_law_binning_logarithm(G, bins=20, show_fit=False, color=None):
+def power_law_binning_logarithm(G, bins=20, show_fit=True, color=None):
     import warnings
     warnings.filterwarnings("ignore")
 
@@ -711,7 +661,7 @@ def random_graph(G):
         gnm = nx.gnm_random_graph(n, m, directed=True)
         return gnm
 
-def build_preferential_attachment_model(original_graph, seed=None):
+    def build_preferential_attachment_model(original_graph, seed=None):
         if seed is not None:
             random.seed(seed)
 
@@ -761,6 +711,83 @@ def build_preferential_attachment_model(original_graph, seed=None):
         print(f"Chosen m value: {m}")
 
         return G
+
+def mixed_preferential_attachment(G_orig, m=3):
+    def estimate_r_and_rho(G):
+        colors = nx.get_node_attributes(G, "color")
+        reds = [n for n, c in colors.items() if c == 'red']
+        blues = [n for n, c in colors.items() if c == 'blue']
+        r = len(reds) / G.number_of_nodes()
+
+        same_red_edges = 0
+        total_red_edges = 0
+        same_blue_edges = 0
+        total_blue_edges = 0
+
+        for u, v in G.edges():
+            if colors[u] == 'red':
+                total_red_edges += 1
+                if colors[v] == 'red':
+                    same_red_edges += 1
+            if colors[u] == 'blue':
+                total_blue_edges += 1
+                if colors[v] == 'blue':
+                    same_blue_edges += 1
+
+        rho_R = same_red_edges / total_red_edges if total_red_edges > 0 else 0.5
+        rho_B = same_blue_edges / total_blue_edges if total_blue_edges > 0 else 0.5
+
+        return r, rho_R, rho_B
+
+    n = G_orig.number_of_nodes()
+    r, rho_R, rho_B = estimate_r_and_rho(G_orig)
+
+    G = nx.DiGraph()
+    G.add_node(0, color='red')
+    G.add_node(1, color='blue')
+    G.add_edge(0, 1)
+
+    n0 = 2
+
+    for new_node in range(n0, n):
+        new_color = 'red' if random.random() < r else 'blue'
+        G.add_node(new_node, color=new_color)
+
+        targets = set()
+        degrees = dict(G.degree())
+        total_degree = sum(degrees.values())
+
+        if total_degree == 0:
+            break
+
+        attempts = 0
+        max_attempts = 1000
+
+        while len(targets) < m and attempts < max_attempts:
+            attempts += 1
+            probs = [degrees[node] / total_degree for node in G.nodes()]
+            candidate = random.choices(list(G.nodes()), weights=probs, k=1)[0]
+
+            if candidate == new_node or candidate in targets:
+                continue
+
+            candidate_color = G.nodes[candidate]['color']
+            if new_color == 'red':
+                accept_prob = rho_R if candidate_color == 'red' else 1 - rho_R
+            else:
+                accept_prob = rho_B if candidate_color == 'blue' else 1 - rho_B
+
+            if random.random() < accept_prob:
+                targets.add(candidate)
+
+        if len(targets) < m:
+            print(
+                f"Warning: Node {new_node} connected to only {len(targets)} targets instead of {m} after {attempts} attempts.")
+
+        for target in targets:
+            G.add_edge(new_node, target)
+
+    return G
 
 def average_distance_directed(G):
     """
@@ -924,7 +951,6 @@ def get_color(avg):
         return 'blue'
 
 def compute_symmetric_edge_percentages_by_color(G):
-    # TODO check sum of edges sum to to total edges
     node_avg_rating = compute_average_rating(G)
     color_map = {node: get_color(avg) for node, avg in node_avg_rating.items()}
 
@@ -994,7 +1020,6 @@ def directed_graph_modularity(G: nx.DiGraph, use_weights=True):
 
 # -----------------------------------------------------------------
 # draw 3 graphes - 3 colores
-
 def split_graph_by_color(G):
     def compute_average_rating(G):
         node_avg_rating = {}
@@ -1666,18 +1691,231 @@ def degree_distribution_negative_graph(G):
     n_g = build_graph_weight_eq_to_target_only(G)
 
     degree_distributions(n_g, degree_type='in', title='max_connected_component_graph', x_min=1, x_max=2)
-    degree_distributions(n_g, degree_type='out', title='max_connected_component_graph', x_min=1, x_max=3)
+    degree_distributions(n_g, degree_type='out', title='max_connected_component_graph', x_min=1, x_max=2)
     degree_distributions(n_g, degree_type='total', title='max_connected_component_graph', x_min=1, x_max=3)
 
-# TODO do venn diagram w clo bet  and pagerank
+
+
+
+
+def mixed_preferential_attachment_three_colors(G_orig, m=3):
+    def get_node_color(avg):
+        if avg <= -2:
+            return 'red'
+        elif avg < 2:
+            return 'yellow'
+        else:
+            return 'blue'
+
+    def compute_node_colors(G):
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+            else:
+                avg = 0
+            node_avg_rating[node] = avg
+
+        color_map = {node: get_node_color(avg) for node, avg in node_avg_rating.items()}
+        return color_map
+
+    def estimate_rho_matrix_three_colors(G, color_map):
+        colors = ['red', 'blue', 'yellow']
+        edge_counts = {src: {dst: 0 for dst in colors} for src in colors}
+        total_counts = {src: 0 for src in colors}
+
+        for u, v in G.edges():
+            src_color = color_map.get(u)
+            dst_color = color_map.get(v)
+            if src_color and dst_color:
+                edge_counts[src_color][dst_color] += 1
+                total_counts[src_color] += 1
+
+        rho = {}
+        for src in colors:
+            rho[src] = {}
+            for dst in colors:
+                total = total_counts[src]
+                rho[src][dst] = edge_counts[src][dst] / total if total > 0 else 0
+        return rho
+
+
+    n = G_orig.number_of_nodes()
+
+    # Step 1: מחשבים צבעים לכל הצמתים בגרף המקורי
+    color_map_orig = compute_node_colors(G_orig)
+
+    # Step 2: מחשבים את מטריצת ההסתברויות
+    rho = estimate_rho_matrix_three_colors(G_orig, color_map_orig)
+
+    # Step 3: מתחילים את הגרף החדש עם 3 צמתים - אחד מכל צבע
+    G = nx.DiGraph()
+    G.add_node(0, color='red')
+    G.add_node(1, color='blue')
+    G.add_node(2, color='yellow')
+    G.add_edge(0, 1)
+    G.add_edge(1, 2)
+    G.add_edge(2, 0)
+
+    colors = ['red', 'blue', 'yellow']
+    color_counts = {'red': 0, 'blue': 0, 'yellow': 0}
+    n0 = 3
+
+    for new_node in range(n0, n):
+        # בוחרים צבע חדש לפי יחס הצבעים בגרף המקורי
+        color_distribution = {
+            'red': sum(1 for c in color_map_orig.values() if c == 'red'),
+            'blue': sum(1 for c in color_map_orig.values() if c == 'blue'),
+            'yellow': sum(1 for c in color_map_orig.values() if c == 'yellow'),
+        }
+        total = sum(color_distribution.values())
+        color_probs = [color_distribution[c] / total for c in colors]
+
+        new_color = random.choices(colors, weights=color_probs, k=1)[0]
+        G.add_node(new_node, color=new_color)
+
+        targets = set()
+        degrees = dict(G.degree())
+        total_degree = sum(degrees.values())
+        if total_degree == 0:
+            break
+
+        attempts = 0
+        max_attempts = 1000
+
+        while len(targets) < m and attempts < max_attempts:
+            attempts += 1
+            probs = [degrees[node] / total_degree for node in G.nodes()]
+            candidate = random.choices(list(G.nodes()), weights=probs, k=1)[0]
+
+            if candidate == new_node or candidate in targets:
+                continue
+
+            candidate_color = G.nodes[candidate]['color']
+            accept_prob = rho[new_color][candidate_color]
+
+            if random.random() < accept_prob:
+                targets.add(candidate)
+
+        if len(targets) < m:
+            print(f"⚠️ Node {new_node} connected to only {len(targets)} targets instead of {m} after {attempts} attempts.")
+
+        for target in targets:
+            G.add_edge(new_node, target)
+
+    return G
+
+def draw_graph_by_node_color(G, title="Mixed Preferential Attachment (3 Colors)"):
+    # הגדרת צבעים מתאימים לכל צבע לוגי
+    color_map = {
+        'red': '#FF0000',
+        'yellow': '#FFFF00',
+        'blue': '#0000FF'
+    }
+
+    node_colors = [
+        color_map.get(G.nodes[node].get('color', 'gray'), 'gray')
+        for node in G.nodes()
+    ]
+
+    pos = nx.spring_layout(G, seed=42)
+    plt.figure(figsize=(10, 8))
+
+    nx.draw_networkx_nodes(
+        G, pos,
+        node_color=node_colors,
+        node_size=40
+    )
+
+    nx.draw_networkx_edges(
+        G, pos,
+        edge_color='black',
+        alpha=0.3,
+        arrows=True,
+        arrowsize=10,
+        width=0.8
+    )
+
+    plt.title(title, fontsize=14)
+    plt.axis('off')
+
+    # מקרא
+    for name, hex_color in color_map.items():
+        plt.scatter([], [], c=hex_color, label=name, s=40)
+
+    plt.legend(frameon=False, title="Node Color")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_avg_rating_distribution(G, color=None, bins=30):
+    """
+    Plots a histogram of average incoming ratings for nodes.
+
+    Parameters:
+    - G: NetworkX DiGraph
+    - color: One of 'red', 'yellow', 'blue', or None (all nodes)
+    - bins: Number of histogram bins
+    """
+
+    def compute_average_rating(G):
+        node_avg_rating = {}
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            if in_edges:
+                avg = sum(data['weight'] for _, _, data in in_edges) / len(in_edges)
+                node_avg_rating[node] = avg
+            else:
+                node_avg_rating[node] = 0
+        return node_avg_rating
+
+    avg_rating = compute_average_rating(G)
+
+    # סינון לפי צבע אם ביקשו
+    if color == 'red':
+        values = [avg for avg in avg_rating.values() if avg <= -2]
+        title = 'Red (avg ≤ -2)'
+        plot_color = 'red'
+    elif color == 'yellow':
+        values = [avg for avg in avg_rating.values() if -2 < avg < 2]
+        title = 'Yellow (-2 < avg < 2)'
+        plot_color = 'gold'
+    elif color == 'blue':
+        values = [avg for avg in avg_rating.values() if avg >= 2]
+        title = 'Blue (avg ≥ 2)'
+        plot_color = 'blue'
+    else:
+        values = list(avg_rating.values())
+        title = 'All Nodes'
+        plot_color = 'gray'
+
+    if not values:
+        print(f"No nodes to plot for color: {color}")
+        return
+
+    # ציור ההיסטוגרמה
+    plt.figure(figsize=(8, 5))
+    plt.hist(values, bins=bins, color=plot_color, edgecolor='black')
+    plt.xlabel('Average Incoming Rating')
+    plt.ylabel('Number of Nodes')
+    plt.title(f'Average Incoming Rating Distribution – {title}')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
 
 if __name__ == '__main__':
 
 
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
+    # draw_graph(G)
+    # draw_graph(max_connected_component_graph)
+
 
     mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
+    print(f'modolarity: {mod}')
 
     # print(f"Total number of communities: {len(comms)}")
     #
@@ -1739,9 +1977,29 @@ if __name__ == '__main__':
 
     # analyze_top10_pagerank_reciprocal(max_connected_component_graph)
     # analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
+    # directed_graph_modularity(max_connected_component_graph)
+    # analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
 
     # pre = build_preferential_attachment_model(max_connected_component_graph)
     #
     # spreading_mode(max_connected_component_graph)
     #
     # spreading_mode(pre)
+
+    # degree_distribution_negative_graph(max_connected_component_graph)
+
+
+    # centrality(max_connected_component_graph)
+
+    mpa = mixed_preferential_attachment_three_colors(max_connected_component_graph)
+    # draw_graph_by_node_color(mpa)
+    mod, comm_dict, comms = directed_graph_modularity_with_communities(mpa)
+    print(f'modolarity: {mod}')
+
+
+
+    plot_avg_rating_distribution(max_connected_component_graph)
+    plot_avg_rating_distribution(max_connected_component_graph, color='red')
+    plot_avg_rating_distribution(max_connected_component_graph, color='yellow')
+    plot_avg_rating_distribution(max_connected_component_graph, color='blue')
+
