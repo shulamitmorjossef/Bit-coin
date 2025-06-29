@@ -11,7 +11,6 @@ from collections import defaultdict
 from networkx.algorithms.community import greedy_modularity_communities, modularity
 import warnings
 
-
 def build_original_graph():
 
     # path to the folder containing the files
@@ -1922,34 +1921,6 @@ def compute_bayesian_trust_scores(G):
 
     return bayesian_scores
 
-def get_bayesian_color(score):
-    if score <= 0:
-        return 'red'
-    elif score < 1.5:
-        return 'yellow'
-    else:
-        return 'blue'
-
-def filter_nodes_by_bayesian_color(G, bayesian_scores, color):
-    if color == 'red':
-        return [n for n, s in bayesian_scores.items() if s <= 0]
-    elif color == 'yellow':
-        return [n for n, s in bayesian_scores.items() if 0 < s < 1.5]
-    elif color == 'blue':
-        return [n for n, s in bayesian_scores.items() if s >= 1.5]
-    else:
-        return list(G.nodes())
-
-def get_color_properties(color):
-    if color == 'red':
-        return 'red', 'Bayesian ≤ 0'
-    elif color == 'yellow':
-        return 'gold', '0 < Bayesian < 1.5'
-    elif color == 'blue':
-        return 'blue', 'Bayesian ≥ 1.5'
-    else:
-        return 'gray', 'All Nodes'
-
 def draw_graph_with_bayesian(G):
 
     def assign_colors(bayesian_scores):
@@ -2535,6 +2506,33 @@ def draw_graph_by_node_color_bayesian(G, title="Graph by Bayesian Node Colors"):
     plt.tight_layout()
     plt.show()
 
+# def get_bayesian_color(score):
+#     if score <= 0:
+#         return 'red'
+#     elif score < 1.5:
+#         return 'yellow'
+#     else:
+#         return 'blue'
+#
+# def filter_nodes_by_bayesian_color(G, bayesian_scores, color):
+#     if color == 'red':
+#         return [n for n, s in bayesian_scores.items() if s <= 0]
+#     elif color == 'yellow':
+#         return [n for n, s in bayesian_scores.items() if 0 < s < 1.5]
+#     elif color == 'blue':
+#         return [n for n, s in bayesian_scores.items() if s >= 1.5]
+#     else:
+#         return list(G.nodes())
+#
+# def get_color_properties(color):
+#     if color == 'red':
+#         return 'red', 'Bayesian ≤ 0'
+#     elif color == 'yellow':
+#         return 'gold', '0 < Bayesian < 1.5'
+#     elif color == 'blue':
+#         return 'blue', 'Bayesian ≥ 1.5'
+#     else:
+#         return 'gray', 'All Nodes'
 
 if __name__ == '__main__':
 
