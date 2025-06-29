@@ -1910,8 +1910,8 @@ if __name__ == '__main__':
 
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
-    draw_graph(G)
-    draw_graph(max_connected_component_graph)
+    # draw_graph(G)
+    # draw_graph(max_connected_component_graph)
 
 
     mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
