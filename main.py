@@ -6,13 +6,10 @@ import math
 import numpy as np
 import random
 import powerlaw
-
-from networkx.algorithms.community.modularity_max import greedy_modularity_communities
-from networkx.algorithms.community.quality import modularity
 from scipy.stats import linregress
 from collections import defaultdict
-
 from networkx.algorithms.community import greedy_modularity_communities, modularity
+import warnings
 
 
 def build_original_graph():
@@ -435,7 +432,6 @@ def power_law_no_binning(G, show_fit=True, color=None):
 
     if show_fit:
         try:
-            import powerlaw
             fit = powerlaw.Fit(degrees, discrete=True)
             alpha = fit.power_law.alpha
             xmin = fit.power_law.xmin
@@ -512,7 +508,6 @@ def power_law_binning_logarithm(G, bins=20, show_fit=True, color=None):
 
     if show_fit:
         try:
-            import powerlaw
             fit = powerlaw.Fit(degrees, discrete=True)
             alpha = fit.power_law.alpha
             xmin = fit.power_law.xmin
@@ -712,82 +707,82 @@ def random_graph(G):
 
         return G
 
-def mixed_preferential_attachment(G_orig, m=3):
-    def estimate_r_and_rho(G):
-        colors = nx.get_node_attributes(G, "color")
-        reds = [n for n, c in colors.items() if c == 'red']
-        blues = [n for n, c in colors.items() if c == 'blue']
-        r = len(reds) / G.number_of_nodes()
+    def mixed_preferential_attachment(G_orig, m=3):
+        def estimate_r_and_rho(G):
+            colors = nx.get_node_attributes(G, "color")
+            reds = [n for n, c in colors.items() if c == 'red']
+            blues = [n for n, c in colors.items() if c == 'blue']
+            r = len(reds) / G.number_of_nodes()
 
-        same_red_edges = 0
-        total_red_edges = 0
-        same_blue_edges = 0
-        total_blue_edges = 0
+            same_red_edges = 0
+            total_red_edges = 0
+            same_blue_edges = 0
+            total_blue_edges = 0
 
-        for u, v in G.edges():
-            if colors[u] == 'red':
-                total_red_edges += 1
-                if colors[v] == 'red':
-                    same_red_edges += 1
-            if colors[u] == 'blue':
-                total_blue_edges += 1
-                if colors[v] == 'blue':
-                    same_blue_edges += 1
+            for u, v in G.edges():
+                if colors[u] == 'red':
+                    total_red_edges += 1
+                    if colors[v] == 'red':
+                        same_red_edges += 1
+                if colors[u] == 'blue':
+                    total_blue_edges += 1
+                    if colors[v] == 'blue':
+                        same_blue_edges += 1
 
-        rho_R = same_red_edges / total_red_edges if total_red_edges > 0 else 0.5
-        rho_B = same_blue_edges / total_blue_edges if total_blue_edges > 0 else 0.5
+            rho_R = same_red_edges / total_red_edges if total_red_edges > 0 else 0.5
+            rho_B = same_blue_edges / total_blue_edges if total_blue_edges > 0 else 0.5
 
-        return r, rho_R, rho_B
+            return r, rho_R, rho_B
 
-    n = G_orig.number_of_nodes()
-    r, rho_R, rho_B = estimate_r_and_rho(G_orig)
+        n = G_orig.number_of_nodes()
+        r, rho_R, rho_B = estimate_r_and_rho(G_orig)
 
-    G = nx.DiGraph()
-    G.add_node(0, color='red')
-    G.add_node(1, color='blue')
-    G.add_edge(0, 1)
+        G = nx.DiGraph()
+        G.add_node(0, color='red')
+        G.add_node(1, color='blue')
+        G.add_edge(0, 1)
 
-    n0 = 2
+        n0 = 2
 
-    for new_node in range(n0, n):
-        new_color = 'red' if random.random() < r else 'blue'
-        G.add_node(new_node, color=new_color)
+        for new_node in range(n0, n):
+            new_color = 'red' if random.random() < r else 'blue'
+            G.add_node(new_node, color=new_color)
 
-        targets = set()
-        degrees = dict(G.degree())
-        total_degree = sum(degrees.values())
+            targets = set()
+            degrees = dict(G.degree())
+            total_degree = sum(degrees.values())
 
-        if total_degree == 0:
-            break
+            if total_degree == 0:
+                break
 
-        attempts = 0
-        max_attempts = 1000
+            attempts = 0
+            max_attempts = 1000
 
-        while len(targets) < m and attempts < max_attempts:
-            attempts += 1
-            probs = [degrees[node] / total_degree for node in G.nodes()]
-            candidate = random.choices(list(G.nodes()), weights=probs, k=1)[0]
+            while len(targets) < m and attempts < max_attempts:
+                attempts += 1
+                probs = [degrees[node] / total_degree for node in G.nodes()]
+                candidate = random.choices(list(G.nodes()), weights=probs, k=1)[0]
 
-            if candidate == new_node or candidate in targets:
-                continue
+                if candidate == new_node or candidate in targets:
+                    continue
 
-            candidate_color = G.nodes[candidate]['color']
-            if new_color == 'red':
-                accept_prob = rho_R if candidate_color == 'red' else 1 - rho_R
-            else:
-                accept_prob = rho_B if candidate_color == 'blue' else 1 - rho_B
+                candidate_color = G.nodes[candidate]['color']
+                if new_color == 'red':
+                    accept_prob = rho_R if candidate_color == 'red' else 1 - rho_R
+                else:
+                    accept_prob = rho_B if candidate_color == 'blue' else 1 - rho_B
 
-            if random.random() < accept_prob:
-                targets.add(candidate)
+                if random.random() < accept_prob:
+                    targets.add(candidate)
 
-        if len(targets) < m:
-            print(
-                f"Warning: Node {new_node} connected to only {len(targets)} targets instead of {m} after {attempts} attempts.")
+            if len(targets) < m:
+                print(
+                    f"Warning: Node {new_node} connected to only {len(targets)} targets instead of {m} after {attempts} attempts.")
 
-        for target in targets:
-            G.add_edge(new_node, target)
+            for target in targets:
+                G.add_edge(new_node, target)
 
-    return G
+        return G
 
 def average_distance_directed(G):
     """
@@ -1281,7 +1276,6 @@ def build_graph_weight_eq_to_target_only(G: nx.DiGraph, target_weight=-10):
     return filtered_G
 
 
-
 # def spreading_mode(G):
 #     import pandas as pd
 #     import networkx as nx
@@ -1694,10 +1688,6 @@ def degree_distribution_negative_graph(G):
     degree_distributions(n_g, degree_type='out', title='max_connected_component_graph', x_min=1, x_max=2)
     degree_distributions(n_g, degree_type='total', title='max_connected_component_graph', x_min=1, x_max=3)
 
-
-
-
-
 def mixed_preferential_attachment_three_colors(G_orig, m=3):
     def get_node_color(avg):
         if avg <= -2:
@@ -1904,41 +1894,63 @@ def plot_avg_rating_distribution(G, color=None, bins=30):
     plt.show()
 
 
-# ---------------------------------------------------------------------------------------
+# -----------NEW COLORED----------------------------------------------------------------------------
+
+def compute_bayesian_trust_scores(G):
+    node_scores = {}
+    avg_rating_all = []
+
+    for node in G.nodes():
+        in_edges = G.in_edges(node, data=True)
+        ratings = [data['weight'] for _, _, data in in_edges]
+        if ratings:
+            avg = sum(ratings) / len(ratings)
+            avg_rating_all.extend(ratings)
+            node_scores[node] = {'avg': avg, 'count': len(ratings)}
+        else:
+            node_scores[node] = {'avg': 0, 'count': 0}
+
+    global_avg = sum(avg_rating_all) / len(avg_rating_all) if avg_rating_all else 0
+    C = sum(G.in_degree(n) for n in G.nodes()) / G.number_of_nodes()
+
+    bayesian_scores = {}
+    for node, stats in node_scores.items():
+        avg = stats['avg']
+        count = stats['count']
+        bayesian = (C * global_avg + count * avg) / (C + count) if (C + count) > 0 else global_avg
+        bayesian_scores[node] = bayesian
+
+    return bayesian_scores
+
+def get_bayesian_color(score):
+    if score <= 0:
+        return 'red'
+    elif score < 1.5:
+        return 'yellow'
+    else:
+        return 'blue'
+
+def filter_nodes_by_bayesian_color(G, bayesian_scores, color):
+    if color == 'red':
+        return [n for n, s in bayesian_scores.items() if s <= 0]
+    elif color == 'yellow':
+        return [n for n, s in bayesian_scores.items() if 0 < s < 1.5]
+    elif color == 'blue':
+        return [n for n, s in bayesian_scores.items() if s >= 1.5]
+    else:
+        return list(G.nodes())
+
+def get_color_properties(color):
+    if color == 'red':
+        return 'red', 'Bayesian ≤ 0'
+    elif color == 'yellow':
+        return 'gold', '0 < Bayesian < 1.5'
+    elif color == 'blue':
+        return 'blue', 'Bayesian ≥ 1.5'
+    else:
+        return 'gray', 'All Nodes'
 
 def draw_graph_with_bayesian(G):
-    def compute_bayesian_trust_scores(G):
-        node_scores = {}
-        avg_rating_all = []
-
-        # שלב 1: חישוב ממוצע הדירוגים לכל צומת
-        for node in G.nodes():
-            in_edges = G.in_edges(node, data=True)
-            ratings = [data['weight'] for _, _, data in in_edges]
-            if ratings:
-                avg = sum(ratings) / len(ratings)
-                avg_rating_all.extend(ratings)
-                node_scores[node] = {'avg': avg, 'count': len(ratings)}
-            else:
-                node_scores[node] = {'avg': 0, 'count': 0}
-
-        # שלב 2: חישוב m ו-C
-        global_avg = sum(avg_rating_all) / len(avg_rating_all) if avg_rating_all else 0
-        avg_in_degree = sum(G.in_degree(n) for n in G.nodes()) / G.number_of_nodes()
-        C = avg_in_degree
-
-        print(f"Global avg rating (m): {global_avg:.2f}")
-        print(f"Avg in-degree (C): {C:.2f}")
-
-        # שלב 3: חישוב ציון Bayesian לכל צומת
-        bayesian_scores = {}
-        for node, stats in node_scores.items():
-            avg = stats['avg']
-            count = stats['count']
-            bayesian = (C * global_avg + count * avg) / (C + count) if (C + count) > 0 else global_avg
-            bayesian_scores[node] = bayesian
-
-        return bayesian_scores
 
     def assign_colors(bayesian_scores):
         colors = []
@@ -1946,7 +1958,7 @@ def draw_graph_with_bayesian(G):
             score = bayesian_scores.get(node, 0)
             if score <= 0:
                 colors.append('#FF0000')  # red
-            elif 0 < score < 2:
+            elif 0 < score < 1.5:
                 colors.append('#FFFF00')  # yellow
             else:
                 colors.append('#0000FF')  # blue
@@ -1968,8 +1980,8 @@ def draw_graph_with_bayesian(G):
 
     legend_labels = {
         '#FF0000': 'Bayesian ≤ 0',
-        '#FFFF00': '0 < Bayesian < 2',
-        '#0000FF': 'Bayesian ≥ 2'
+        '#FFFF00': '0 < Bayesian < 1.5',
+        '#0000FF': 'Bayesian ≥ 1.5'
     }
 
     for color, label in legend_labels.items():
@@ -1989,51 +2001,24 @@ def plot_bayesian_trust_distribution(G, color=None, bins=30):
     - bins: Number of histogram bins
     """
 
-    def compute_bayesian_trust_scores(G):
-        node_scores = {}
-        avg_rating_all = []
-
-        for node in G.nodes():
-            in_edges = G.in_edges(node, data=True)
-            ratings = [data['weight'] for _, _, data in in_edges]
-            if ratings:
-                avg = sum(ratings) / len(ratings)
-                avg_rating_all.extend(ratings)
-                node_scores[node] = {'avg': avg, 'count': len(ratings)}
-            else:
-                node_scores[node] = {'avg': 0, 'count': 0}
-
-        global_avg = sum(avg_rating_all) / len(avg_rating_all) if avg_rating_all else 0
-        avg_in_degree = sum(G.in_degree(n) for n in G.nodes()) / G.number_of_nodes()
-        C = avg_in_degree
-
-        bayesian_scores = {}
-        for node, stats in node_scores.items():
-            avg = stats['avg']
-            count = stats['count']
-            bayesian = (C * global_avg + count * avg) / (C + count) if (C + count) > 0 else global_avg
-            bayesian_scores[node] = bayesian
-
-        return bayesian_scores
-
     bayesian_scores = compute_bayesian_trust_scores(G)
 
     if color == 'red':
         values = [s for s in bayesian_scores.values() if s <= 0]
-        title = 'Red (Bayesian ≤ -5)'
+        title = 'Red (Bayesian ≤ 0)'
         plot_color = 'red'
     elif color == 'yellow':
-        values = [s for s in bayesian_scores.values() if 0 < s < 2]
-        title = 'Yellow (-5 < Bayesian < 0)'
+        values = [s for s in bayesian_scores.values() if 0 < s < 1.5]
+        title = 'Yellow (0 < Bayesian < 1.5)'
         plot_color = 'gold'
     elif color == 'blue':
-        values = [s for s in bayesian_scores.values() if s >= 2]
-        title = 'Blue (Bayesian ≥ 0)'
+        values = [s for s in bayesian_scores.values() if s >= 1.5]
+        title = 'Blue (Bayesian ≥ 1.5)'
         plot_color = 'blue'
     else:
         values = list(bayesian_scores.values())
         title = 'All Nodes'
-        plot_color = 'gray'
+        plot_color = 'salmon'
 
     if not values:
         print(f"No nodes to plot for color: {color}")
@@ -2060,32 +2045,6 @@ def degree_distributions_bayesian(G, degree_type='in', title=' ', x_min=None, x_
     - color: One of 'red', 'yellow', 'blue', or None (for all nodes)
     """
 
-    def compute_bayesian_trust_scores(G):
-        node_scores = {}
-        avg_rating_all = []
-
-        for node in G.nodes():
-            in_edges = G.in_edges(node, data=True)
-            ratings = [data['weight'] for _, _, data in in_edges]
-            if ratings:
-                avg = sum(ratings) / len(ratings)
-                avg_rating_all.extend(ratings)
-                node_scores[node] = {'avg': avg, 'count': len(ratings)}
-            else:
-                node_scores[node] = {'avg': 0, 'count': 0}
-
-        global_avg = sum(avg_rating_all) / len(avg_rating_all) if avg_rating_all else 0
-        avg_in_degree = sum(G.in_degree(n) for n in G.nodes()) / G.number_of_nodes()
-        C = avg_in_degree
-
-        bayesian_scores = {}
-        for node, stats in node_scores.items():
-            avg = stats['avg']
-            count = stats['count']
-            bayesian = (C * global_avg + count * avg) / (C + count) if (C + count) > 0 else global_avg
-            bayesian_scores[node] = bayesian
-
-        return bayesian_scores
 
     bayesian_scores = compute_bayesian_trust_scores(G)
 
@@ -2094,12 +2053,12 @@ def degree_distributions_bayesian(G, degree_type='in', title=' ', x_min=None, x_
         title += ' (Red: Bayesian ≤ 0)'
         plot_color = 'red'
     elif color == 'yellow':
-        nodes = [n for n, score in bayesian_scores.items() if 0 < score < 2]
-        title += ' (Yellow: 0 < Bayesian < 2)'
+        nodes = [n for n, score in bayesian_scores.items() if 0 < score < 1.5]
+        title += ' (Yellow: 0 < Bayesian < 1.5)'
         plot_color = 'gold'
     elif color == 'blue':
-        nodes = [n for n, score in bayesian_scores.items() if score >= 2]
-        title += ' (Blue: Bayesian ≥ 2)'
+        nodes = [n for n, score in bayesian_scores.items() if score >= 1.5]
+        title += ' (Blue: Bayesian ≥ 1.5)'
         plot_color = 'blue'
     elif color is None:
         nodes = list(G.nodes())
@@ -2159,8 +2118,422 @@ def all_degree_distributions_bayesian(G):
     degree_distributions_bayesian(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=4)
     degree_distributions_bayesian(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=4)
 
+def power_law_no_binning_bayesian(G, show_fit=True, color=None):
+    import warnings
+    warnings.filterwarnings("ignore")
 
+    bayesian_scores = compute_bayesian_trust_scores(G)
 
+    if color == 'red':
+        nodes = [n for n, s in bayesian_scores.items() if s <= 0]
+        title = "Power-law (Red ≤ 0)"
+    elif color == 'yellow':
+        nodes = [n for n, s in bayesian_scores.items() if 0 < s < 1.5]
+        title = "Power-law (Yellow 0 < s < 1.5)"
+    elif color == 'blue':
+        nodes = [n for n, s in bayesian_scores.items() if s >= 1.5]
+        title = "Power-law (Blue ≥ 1.5)"
+    else:
+        nodes = list(G.nodes())
+        title = "Power-law (All Nodes)"
+
+    degrees = [G.degree(n) for n in nodes if G.degree(n) > 0]
+
+    if not degrees:
+        print(f"No degrees to plot for color: {color}")
+        return
+
+    hist, bin_edges = np.histogram(degrees, bins=range(1, max(degrees) + 2), density=True)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    plt.figure(figsize=(8, 6))
+    plt.bar(bin_centers, hist, width=0.8, color='orange', edgecolor='black', alpha=0.7)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel("Vertex Degree")
+    plt.ylabel("Probability")
+    plt.title(title)
+    plt.grid(True, which='both', linestyle='--', alpha=0.4)
+
+    if show_fit:
+        try:
+            fit = powerlaw.Fit(degrees, discrete=True)
+            alpha = fit.power_law.alpha
+            xmin = fit.power_law.xmin
+            R, p = fit.distribution_compare('power_law', 'lognormal')
+
+            print(f"⚙️ Raw Fit Results for {color or 'all'}:")
+            print(f"  α (power-law exponent): {alpha:.3f}")
+            print(f"  xmin: {xmin}")
+            print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
+
+            x_fit = np.linspace(xmin, max(degrees), 100)
+            y_fit = (x_fit / xmin) ** (-alpha)
+            y_fit *= hist[bin_centers >= xmin][0] / y_fit[0]
+            plt.xlim(left=xmin)
+            plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
+            plt.legend()
+        except ImportError:
+            print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
+
+    plt.tight_layout()
+    plt.show()
+
+def power_law_binning_logarithm_bayesian(G, bins=20, show_fit=True, color=None):
+    warnings.filterwarnings("ignore")
+
+    bayesian_scores = compute_bayesian_trust_scores(G)
+
+    if color == 'red':
+        nodes = [n for n, s in bayesian_scores.items() if s <= 0]
+        title = "Log-Binned Power-law (Red ≤ 0)"
+    elif color == 'yellow':
+        nodes = [n for n, s in bayesian_scores.items() if 0 < s < 1.5]
+        title = "Log-Binned Power-law (Yellow 0 < s < 1.5)"
+    elif color == 'blue':
+        nodes = [n for n, s in bayesian_scores.items() if s >= 1.5]
+        title = "Log-Binned Power-law (Blue ≥ 1.5)"
+    else:
+        nodes = list(G.nodes())
+        title = "Log-Binned Power-law (All Nodes)"
+
+    degrees = [G.degree(n) for n in nodes if G.degree(n) > 0]
+
+    if not degrees:
+        print(f"No degrees to plot for color: {color}")
+        return
+
+    min_deg = max(min(degrees), 1)
+    max_deg = max(degrees)
+    log_bins = np.logspace(np.log10(min_deg), np.log10(max_deg), bins)
+
+    hist, bin_edges = np.histogram(degrees, bins=log_bins, density=True)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    plt.figure(figsize=(8, 6))
+    plt.bar(bin_centers, hist, width=np.diff(bin_edges), align='center',
+            alpha=0.7, color='orange', edgecolor='black')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel("Vertex Degree")
+    plt.ylabel("Probability")
+    plt.title(title)
+    plt.grid(True, which='both', linestyle='--', alpha=0.4)
+
+    if show_fit:
+        try:
+            fit = powerlaw.Fit(degrees, discrete=True)
+            alpha = fit.power_law.alpha
+            xmin = fit.power_law.xmin
+            R, p = fit.distribution_compare('power_law', 'lognormal')
+
+            print(f"⚙️ Log-Binned Fit Results for {color or 'all'}:")
+            print(f"  α (power-law exponent): {alpha:.3f}")
+            print(f"  xmin: {xmin}")
+            print(f"  Distribution is power-law? {'Yes' if p > 0.05 else 'No'} (p={p:.4f})")
+
+            x_fit = np.linspace(xmin, max_deg, 100)
+            y_fit = (x_fit / xmin) ** (-alpha)
+            y_fit *= hist[bin_centers >= xmin][0] / y_fit[0]
+            plt.xlim(left=xmin)
+            plt.plot(x_fit, y_fit, 'r--', label=f'Power-law fit (γ={alpha:.2f})')
+            plt.legend()
+        except ImportError:
+            print("⚠️ כדי להשתמש באופציית fit, יש להתקין את הספרייה 'powerlaw'")
+
+    plt.tight_layout()
+    plt.show()
+
+def split_graph_by_bayesian_color(G):
+
+    def get_color(score):
+        if score <= 0:
+            return 'red'
+        elif score < 1.5:
+            return 'yellow'
+        else:
+            return 'blue'
+
+    # חישוב ציוני Bayesian
+    bayesian_scores = compute_bayesian_trust_scores(G)
+    color_map = {node: get_color(score) for node, score in bayesian_scores.items()}
+
+    # קיבוץ צמתים לפי צבע
+    color_groups = {'red': set(), 'yellow': set(), 'blue': set()}
+    for node, color in color_map.items():
+        color_groups[color].add(node)
+
+    # יצירת תתי גרפים
+    subgraphs = {}
+    for color, nodes in color_groups.items():
+        edges = [(u, v, data) for u, v, data in G.edges(data=True)
+                 if u in nodes and v in nodes]
+        subG = nx.DiGraph()
+        subG.add_nodes_from(nodes)
+        subG.add_edges_from(edges)
+        subgraphs[color] = subG
+
+    # הדפסת מידע + ציור
+    for color, subG in subgraphs.items():
+        print(f"\n=== Subgraph for {color.upper()} nodes ===")
+        print(f"Number of nodes: {subG.number_of_nodes()}")
+        print(f"Number of edges: {subG.number_of_edges()}")
+
+        pos = nx.spring_layout(subG, seed=42)
+        plt.figure(figsize=(6, 5))
+        nx.draw(subG, pos, with_labels=False, node_color=color,
+                edge_color='gray', node_size=40, arrowsize=10)
+        plt.title(f"{color.upper()} Subgraph")
+        plt.tight_layout()
+        plt.show()
+
+def build_cross_color_edges_graph_bayesian(G):
+
+    def get_color(score):
+        if score <= 0:
+            return 'red'
+        elif score < 1.5:
+            return 'yellow'
+        else:
+            return 'blue'
+
+    # שלב 1: חישוב ציוני Bayesian וקביעת צבע לכל קודקוד
+    bayesian_scores = compute_bayesian_trust_scores(G)
+    color_map = {node: get_color(score) for node, score in bayesian_scores.items()}
+
+    # שלב 2: מציאת כל הקשתות בין צבעים שונים
+    cross_color_edges = []
+    color_counts = defaultdict(int)
+    weights = []
+
+    for u, v, data in G.edges(data=True):
+        if u in color_map and v in color_map:
+            color_u = color_map[u]
+            color_v = color_map[v]
+            if color_u != color_v:
+                cross_color_edges.append((u, v, data))
+                weights.append(data['weight'])
+                color_counts[(color_u, color_v)] += 1
+
+    # שלב 3: בניית גרף חדש
+    cross_color_G = nx.DiGraph()
+    cross_color_G.add_edges_from(cross_color_edges)
+
+    print(f"\n🎯 קשתות צבעוניות (מקודקודים בצבעים שונים): {len(cross_color_edges)}")
+    print(f"🧮 מספר קודקודים בגרף החדש: {cross_color_G.number_of_nodes()}")
+    if weights:
+        print(f"📊 טווח משקלים: {min(weights)} עד {max(weights)}")
+        print(f"📈 ממוצע משקלים: {sum(weights) / len(weights):.2f}")
+
+    print("\n📚 פירוט לפי סוגי צבעים:")
+    for (src_color, dst_color), count in color_counts.items():
+        print(f"  {src_color.upper()} → {dst_color.upper()}: {count} קשתות")
+
+    # שלב 4: ציור
+    pos = nx.spring_layout(cross_color_G, seed=42)
+    node_colors = [color_map[n] for n in cross_color_G.nodes()]
+    nx.draw(cross_color_G, pos,
+            node_color=node_colors,
+            edge_color='gray',
+            node_size=40,
+            arrowsize=10)
+    plt.title("גרף של קשתות בין צבעים שונים (לפי Bayesian Trust)")
+    plt.tight_layout()
+    plt.show()
+
+    return cross_color_G
+
+def all_power_law_bayesian(G):
+
+    power_law_no_binning_bayesian(G, show_fit=True, color='blue')
+    power_law_binning_logarithm_bayesian(G, bins=20, show_fit=True, color='blue')
+
+    power_law_no_binning_bayesian(G, show_fit=True, color='red')
+    power_law_binning_logarithm_bayesian(G, bins=20, show_fit=True, color='red')
+
+    power_law_no_binning_bayesian(G, show_fit=True, color='yellow')
+    power_law_binning_logarithm_bayesian(G, bins=20, show_fit=True, color='yellow')
+
+    power_law_no_binning_bayesian(G, show_fit=True)
+    power_law_binning_logarithm_bayesian(G, bins=20, show_fit=True)
+
+def mixed_preferential_attachment_three_colors_bayesian(G_orig, m=3):
+    def get_node_color(bayesian_score):
+        if bayesian_score <= 0:
+            return 'red'
+        elif bayesian_score < 1.5:
+            return 'yellow'
+        else:
+            return 'blue'
+
+    def compute_node_colors(G):
+        bayesian_scores = compute_bayesian_trust_scores(G)
+        color_map = {node: get_node_color(score) for node, score in bayesian_scores.items()}
+        return color_map
+
+    def estimate_rho_matrix_three_colors(G, color_map):
+        colors = ['red', 'blue', 'yellow']
+        edge_counts = {src: {dst: 0 for dst in colors} for src in colors}
+        total_counts = {src: 0 for src in colors}
+
+        for u, v in G.edges():
+            src_color = color_map.get(u)
+            dst_color = color_map.get(v)
+            if src_color and dst_color:
+                edge_counts[src_color][dst_color] += 1
+                total_counts[src_color] += 1
+
+        rho = {}
+        for src in colors:
+            rho[src] = {}
+            for dst in colors:
+                total = total_counts[src]
+                rho[src][dst] = edge_counts[src][dst] / total if total > 0 else 0
+        return rho
+
+    n = G_orig.number_of_nodes()
+
+    # Step 1: Compute colors based on Bayesian score
+    color_map_orig = compute_node_colors(G_orig)
+
+    # Print color distribution
+    color_counts = {
+        'red': sum(1 for c in color_map_orig.values() if c == 'red'),
+        'blue': sum(1 for c in color_map_orig.values() if c == 'blue'),
+        'yellow': sum(1 for c in color_map_orig.values() if c == 'yellow'),
+    }
+    total_nodes = sum(color_counts.values())
+    print("🎨 Color Distribution in Original Graph:")
+    for color in ['red', 'blue', 'yellow']:
+        prob = color_counts[color] / total_nodes
+        print(f"  {color.capitalize()}: {color_counts[color]} nodes ({prob:.2%})")
+
+    # Step 2: Compute rho matrix
+    rho = estimate_rho_matrix_three_colors(G_orig, color_map_orig)
+
+    print("\n🔢 Estimated Rho Matrix (Connection Probabilities):")
+    print(f"{'':>10} {'Red':>10} {'Blue':>10} {'Yellow':>10}")
+    for src in ['red', 'blue', 'yellow']:
+        row = f"{src.capitalize():>10}"
+        for dst in ['red', 'blue', 'yellow']:
+            row += f" {rho[src][dst]:>10.3f}"
+        print(row)
+
+    # Step 3: Initialize the new graph
+    G = nx.DiGraph()
+    G.add_node(0, color='red')
+    G.add_node(1, color='blue')
+    G.add_node(2, color='yellow')
+    G.add_edge(0, 1)
+    G.add_edge(1, 2)
+    G.add_edge(2, 0)
+
+    colors = ['red', 'blue', 'yellow']
+    n0 = 3
+    incomplete_nodes = 0
+
+    for new_node in range(n0, n):
+        # Sample color for new node
+        total = sum(color_counts.values())
+        color_probs = [color_counts[c] / total for c in colors]
+        new_color = random.choices(colors, weights=color_probs, k=1)[0]
+        G.add_node(new_node, color=new_color)
+
+        targets = set()
+        degrees = dict(G.degree())
+        total_degree = sum(degrees.values())
+        if total_degree == 0:
+            break
+
+        attempts = 0
+        max_attempts = 1000
+
+        while len(targets) < m and attempts < max_attempts:
+            attempts += 1
+            probs = [degrees[node] / total_degree for node in G.nodes()]
+            candidate = random.choices(list(G.nodes()), weights=probs, k=1)[0]
+
+            if candidate == new_node or candidate in targets:
+                continue
+
+            candidate_color = G.nodes[candidate]['color']
+            accept_prob = rho[new_color][candidate_color]
+
+            if random.random() < accept_prob:
+                targets.add(candidate)
+
+        if len(targets) < m:
+            print(f"⚠️ Node {new_node} connected to only {len(targets)} targets instead of {m} after {attempts} attempts.")
+            incomplete_nodes += 1
+
+        for target in targets:
+            G.add_edge(new_node, target)
+
+    # Final summary
+    print("\n📊 Final Graph Summary:")
+    print(f"  Total nodes: {G.number_of_nodes()}")
+    print(f"  Total edges: {G.number_of_edges()}")
+    print(f"  Nodes with < {m} connections: {incomplete_nodes}")
+
+    return G
+
+def draw_graph_by_node_color_bayesian(G, title="Graph by Bayesian Node Colors"):
+
+    def get_node_color(bayesian_score):
+        if bayesian_score <= 0:
+            return 'red'
+        elif bayesian_score < 1.5:
+            return 'yellow'
+        else:
+            return 'blue'
+
+    # צבעים גרפיים לתצוגה
+    display_colors = {
+        'red': '#FF0000',
+        'yellow': '#FFFF00',
+        'blue': '#0000FF'
+    }
+
+    # מחשבים צביעה לפי Bayesian אם לא קיימת
+    if 'color' not in next(iter(G.nodes(data=True)))[1]:
+        bayesian_scores = compute_bayesian_trust_scores(G)
+        color_map = {node: get_node_color(score) for node, score in bayesian_scores.items()}
+    else:
+        color_map = {node: G.nodes[node]['color'] for node in G.nodes()}
+
+    node_colors = [
+        display_colors.get(color_map.get(node, 'gray'), 'gray') for node in G.nodes()
+    ]
+
+    # ציור
+    pos = nx.spring_layout(G, seed=42)
+    plt.figure(figsize=(10, 8))
+
+    nx.draw_networkx_nodes(
+        G, pos,
+        node_color=node_colors,
+        node_size=40
+    )
+
+    nx.draw_networkx_edges(
+        G, pos,
+        edge_color='black',
+        alpha=0.3,
+        arrows=True,
+        arrowsize=10,
+        width=0.8
+    )
+
+    plt.title(title, fontsize=14)
+    plt.axis('off')
+
+    # מקרא
+    for name, hex_color in display_colors.items():
+        plt.scatter([], [], c=hex_color, label=name, s=40)
+
+    plt.legend(frameon=False, title="Node Color")
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -2169,22 +2542,11 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    # draw_graph_with_bayesian(max_connected_component_graph)
-
-    plot_bayesian_trust_distribution(max_connected_component_graph)
-    plot_bayesian_trust_distribution(max_connected_component_graph, color='red')
-    plot_bayesian_trust_distribution(max_connected_component_graph, color='yellow')
-    plot_bayesian_trust_distribution(max_connected_component_graph, color='blue')
-
-    all_degree_distributions_bayesian(max_connected_component_graph)
 
     # draw_graph(G)
     # draw_graph(max_connected_component_graph)
 
-
     # mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
-    # print(f'modolarity: {mod}')
-
     # print(f"Total number of communities: {len(comms)}")
     #
     # for i, comm in enumerate(comms, start=1):
@@ -2264,13 +2626,29 @@ if __name__ == '__main__':
 
     # mpa = mixed_preferential_attachment_three_colors(max_connected_component_graph)
     # draw_graph_by_node_color(mpa)
-    # mod, comm_dict, comms = directed_graph_modularity_with_communities(mpa)
-    # print(f'modolarity: {mod}')
-    #
-    #
-    #
+    # mod, comm_dict, comms = directed_graph_modularity_with_communities(new_G)
     # plot_avg_rating_distribution(max_connected_component_graph)
     # plot_avg_rating_distribution(max_connected_component_graph, color='red')
     # plot_avg_rating_distribution(max_connected_component_graph, color='yellow')
     # plot_avg_rating_distribution(max_connected_component_graph, color='blue')
+
+
+#     -----------------NEW COLORED---------------------------
+
+    # draw_graph_with_bayesian(max_connected_component_graph)
+
+    plot_bayesian_trust_distribution(max_connected_component_graph)
+    # plot_bayesian_trust_distribution(max_connected_component_graph, color='red')
+    # plot_bayesian_trust_distribution(max_connected_component_graph, color='yellow')
+    # plot_bayesian_trust_distribution(max_connected_component_graph, color='blue')
+
+    # all_degree_distributions_bayesian(max_connected_component_graph)
+
+    # split_graph_by_bayesian_color(max_connected_component_graph)
+
+    # all_power_law_bayesian(max_connected_component_graph)
+    # new_G = mixed_preferential_attachment_three_colors_bayesian(max_connected_component_graph, m=3)
+    # draw_graph_by_node_color(new_G, title="Bayesian Mixed Preferential Attachment")
+
+    # build_cross_color_edges_graph_bayesian(max_connected_component_graph)
 
