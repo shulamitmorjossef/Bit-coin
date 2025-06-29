@@ -119,7 +119,7 @@ def draw_graph(G):
     for color, label in legend_labels.items():
         ax.scatter([], [], c=color, label=label, s=40)
 
-    # ax.legend(frameon=False, labelcolor='black')
+    ax.legend(frameon=False, labelcolor='black')
 
     plt.tight_layout()
     plt.show()
@@ -1623,8 +1623,8 @@ if __name__ == '__main__':
 
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
-    # draw_graph(G)
-    # draw_graph(max_connected_component_graph)
+    draw_graph(G)
+    draw_graph(max_connected_component_graph)
 
 
     # compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
@@ -1699,6 +1699,6 @@ if __name__ == '__main__':
     #
     # spreading_mode(pre)
 
-    degree_distribution_negative_graph(max_connected_component_graph)
+    # degree_distribution_negative_graph(max_connected_component_graph)
 
 
