@@ -118,7 +118,7 @@ def draw_graph(G):
     for color, label in legend_labels.items():
         ax.scatter([], [], c=color, label=label, s=40)
 
-    # ax.legend(frameon=False, labelcolor='black')
+    ax.legend(frameon=False, labelcolor='black')
 
     plt.tight_layout()
     plt.show()
