@@ -1848,7 +1848,6 @@ def draw_graph_by_node_color(G, title="Mixed Preferential Attachment (3 Colors)"
     plt.tight_layout()
     plt.show()
 
-
 def plot_avg_rating_distribution(G, color=None, bins=30):
     """
     Plots a histogram of average incoming ratings for nodes.
@@ -1905,17 +1904,286 @@ def plot_avg_rating_distribution(G, color=None, bins=30):
     plt.show()
 
 
+# ---------------------------------------------------------------------------------------
+
+def draw_graph_with_bayesian(G):
+    def compute_bayesian_trust_scores(G):
+        node_scores = {}
+        avg_rating_all = []
+
+        # שלב 1: חישוב ממוצע הדירוגים לכל צומת
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            ratings = [data['weight'] for _, _, data in in_edges]
+            if ratings:
+                avg = sum(ratings) / len(ratings)
+                avg_rating_all.extend(ratings)
+                node_scores[node] = {'avg': avg, 'count': len(ratings)}
+            else:
+                node_scores[node] = {'avg': 0, 'count': 0}
+
+        # שלב 2: חישוב m ו-C
+        global_avg = sum(avg_rating_all) / len(avg_rating_all) if avg_rating_all else 0
+        avg_in_degree = sum(G.in_degree(n) for n in G.nodes()) / G.number_of_nodes()
+        C = avg_in_degree
+
+        print(f"Global avg rating (m): {global_avg:.2f}")
+        print(f"Avg in-degree (C): {C:.2f}")
+
+        # שלב 3: חישוב ציון Bayesian לכל צומת
+        bayesian_scores = {}
+        for node, stats in node_scores.items():
+            avg = stats['avg']
+            count = stats['count']
+            bayesian = (C * global_avg + count * avg) / (C + count) if (C + count) > 0 else global_avg
+            bayesian_scores[node] = bayesian
+
+        return bayesian_scores
+
+    def assign_colors(bayesian_scores):
+        colors = []
+        for node in G.nodes():
+            score = bayesian_scores.get(node, 0)
+            if score <= 0:
+                colors.append('#FF0000')  # red
+            elif 0 < score < 2:
+                colors.append('#FFFF00')  # yellow
+            else:
+                colors.append('#0000FF')  # blue
+        return colors
+
+    # חישוב ציונים וצביעה
+    bayesian_scores = compute_bayesian_trust_scores(G)
+    node_colors = assign_colors(bayesian_scores)
+
+    # ציור הגרף
+    pos = nx.spring_layout(G, seed=42)
+    fig, ax = plt.subplots(figsize=(10, 8), facecolor='white')
+
+    nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=40, ax=ax)
+    nx.draw_networkx_edges(G, pos, edge_color='black', alpha=0.3, arrows=True, arrowsize=10, width=0.8, ax=ax)
+
+    ax.set_title("Bitcoin OTC Trust Graph – Colored by Bayesian Trust", fontsize=14, color='black')
+    ax.axis("off")
+
+    legend_labels = {
+        '#FF0000': 'Bayesian ≤ 0',
+        '#FFFF00': '0 < Bayesian < 2',
+        '#0000FF': 'Bayesian ≥ 2'
+    }
+
+    for color, label in legend_labels.items():
+        ax.scatter([], [], c=color, label=label, s=40)
+
+    ax.legend(frameon=False, labelcolor='black')
+    plt.tight_layout()
+    plt.show()
+
+def plot_bayesian_trust_distribution(G, color=None, bins=30):
+    """
+    Plots a histogram of Bayesian trust scores for nodes.
+
+    Parameters:
+    - G: NetworkX DiGraph
+    - color: One of 'red', 'yellow', 'blue', or None (all nodes)
+    - bins: Number of histogram bins
+    """
+
+    def compute_bayesian_trust_scores(G):
+        node_scores = {}
+        avg_rating_all = []
+
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            ratings = [data['weight'] for _, _, data in in_edges]
+            if ratings:
+                avg = sum(ratings) / len(ratings)
+                avg_rating_all.extend(ratings)
+                node_scores[node] = {'avg': avg, 'count': len(ratings)}
+            else:
+                node_scores[node] = {'avg': 0, 'count': 0}
+
+        global_avg = sum(avg_rating_all) / len(avg_rating_all) if avg_rating_all else 0
+        avg_in_degree = sum(G.in_degree(n) for n in G.nodes()) / G.number_of_nodes()
+        C = avg_in_degree
+
+        bayesian_scores = {}
+        for node, stats in node_scores.items():
+            avg = stats['avg']
+            count = stats['count']
+            bayesian = (C * global_avg + count * avg) / (C + count) if (C + count) > 0 else global_avg
+            bayesian_scores[node] = bayesian
+
+        return bayesian_scores
+
+    bayesian_scores = compute_bayesian_trust_scores(G)
+
+    if color == 'red':
+        values = [s for s in bayesian_scores.values() if s <= 0]
+        title = 'Red (Bayesian ≤ -5)'
+        plot_color = 'red'
+    elif color == 'yellow':
+        values = [s for s in bayesian_scores.values() if 0 < s < 2]
+        title = 'Yellow (-5 < Bayesian < 0)'
+        plot_color = 'gold'
+    elif color == 'blue':
+        values = [s for s in bayesian_scores.values() if s >= 2]
+        title = 'Blue (Bayesian ≥ 0)'
+        plot_color = 'blue'
+    else:
+        values = list(bayesian_scores.values())
+        title = 'All Nodes'
+        plot_color = 'gray'
+
+    if not values:
+        print(f"No nodes to plot for color: {color}")
+        return
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(values, bins=bins, color=plot_color, edgecolor='black')
+    plt.xlabel('Bayesian Trust Score')
+    plt.ylabel('Number of Nodes')
+    plt.title(f'Bayesian Trust Score Distribution – {title}')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+def degree_distributions_bayesian(G, degree_type='in', title=' ', x_min=None, x_max=None, color=None):
+    """
+    Plot log-X histogram of degree distribution for nodes filtered by Bayesian Trust color.
+
+    Parameters:
+    - G: NetworkX DiGraph
+    - degree_type: 'in', 'out', or 'total'
+    - title: Plot title
+    - x_min, x_max: Exponents for logspace binning
+    - color: One of 'red', 'yellow', 'blue', or None (for all nodes)
+    """
+
+    def compute_bayesian_trust_scores(G):
+        node_scores = {}
+        avg_rating_all = []
+
+        for node in G.nodes():
+            in_edges = G.in_edges(node, data=True)
+            ratings = [data['weight'] for _, _, data in in_edges]
+            if ratings:
+                avg = sum(ratings) / len(ratings)
+                avg_rating_all.extend(ratings)
+                node_scores[node] = {'avg': avg, 'count': len(ratings)}
+            else:
+                node_scores[node] = {'avg': 0, 'count': 0}
+
+        global_avg = sum(avg_rating_all) / len(avg_rating_all) if avg_rating_all else 0
+        avg_in_degree = sum(G.in_degree(n) for n in G.nodes()) / G.number_of_nodes()
+        C = avg_in_degree
+
+        bayesian_scores = {}
+        for node, stats in node_scores.items():
+            avg = stats['avg']
+            count = stats['count']
+            bayesian = (C * global_avg + count * avg) / (C + count) if (C + count) > 0 else global_avg
+            bayesian_scores[node] = bayesian
+
+        return bayesian_scores
+
+    bayesian_scores = compute_bayesian_trust_scores(G)
+
+    if color == 'red':
+        nodes = [n for n, score in bayesian_scores.items() if score <= 0]
+        title += ' (Red: Bayesian ≤ 0)'
+        plot_color = 'red'
+    elif color == 'yellow':
+        nodes = [n for n, score in bayesian_scores.items() if 0 < score < 2]
+        title += ' (Yellow: 0 < Bayesian < 2)'
+        plot_color = 'gold'
+    elif color == 'blue':
+        nodes = [n for n, score in bayesian_scores.items() if score >= 2]
+        title += ' (Blue: Bayesian ≥ 2)'
+        plot_color = 'blue'
+    elif color is None:
+        nodes = list(G.nodes())
+        plot_color = 'gray'
+    else:
+        raise ValueError("color must be 'red', 'yellow', 'blue', or None")
+
+    if degree_type == 'in':
+        degrees = [G.in_degree(n) for n in nodes]
+        label = 'In-Degree'
+    elif degree_type == 'out':
+        degrees = [G.out_degree(n) for n in nodes]
+        label = 'Out-Degree'
+    elif degree_type == 'total':
+        degrees = [G.in_degree(n) + G.out_degree(n) for n in nodes]
+        label = 'Total Degree'
+    else:
+        raise ValueError("degree_type must be 'in', 'out', or 'total'")
+
+    degrees = [d for d in degrees if d > 0]
+
+    if not degrees:
+        print(f"No degrees to plot for color: {color}")
+        return
+
+    if x_min is None:
+        x_min = math.log10(max(min(degrees), 1))
+    if x_max is None:
+        x_max = math.log10(max(degrees))
+
+    bins = np.logspace(x_min, x_max, num=20)
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(degrees, bins=bins, color=plot_color, edgecolor='black')
+    plt.xscale('log')
+    plt.xlabel(f'{label} (log scale)')
+    plt.ylabel('Frequency')
+    plt.title(f'{label} Distribution (Log X-axis) {title}')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+def all_degree_distributions_bayesian(G):
+    degree_distributions_bayesian(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=4, color='blue')
+    degree_distributions_bayesian(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=4, color='blue')
+    degree_distributions_bayesian(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=4, color='blue')
+
+    degree_distributions_bayesian(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=4, color='red')
+    degree_distributions_bayesian(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=4, color='red')
+    degree_distributions_bayesian(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=4, color='red')
+
+    degree_distributions_bayesian(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=4, color='yellow')
+    degree_distributions_bayesian(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=4, color='yellow')
+    degree_distributions_bayesian(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=4, color='yellow')
+
+    degree_distributions_bayesian(G, degree_type='in', title='max_connected_component_graph',x_min=0, x_max=4)
+    degree_distributions_bayesian(G, degree_type='out', title='max_connected_component_graph', x_min=0, x_max=4)
+    degree_distributions_bayesian(G, degree_type='total', title='max_connected_component_graph', x_min=0, x_max=4)
+
+
+
+
+
 if __name__ == '__main__':
 
 
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
+
+    # draw_graph_with_bayesian(max_connected_component_graph)
+
+    plot_bayesian_trust_distribution(max_connected_component_graph)
+    plot_bayesian_trust_distribution(max_connected_component_graph, color='red')
+    plot_bayesian_trust_distribution(max_connected_component_graph, color='yellow')
+    plot_bayesian_trust_distribution(max_connected_component_graph, color='blue')
+
+    all_degree_distributions_bayesian(max_connected_component_graph)
+
     # draw_graph(G)
     # draw_graph(max_connected_component_graph)
 
 
-    mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
-    print(f'modolarity: {mod}')
+    # mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
+    # print(f'modolarity: {mod}')
 
     # print(f"Total number of communities: {len(comms)}")
     #
@@ -1991,15 +2259,18 @@ if __name__ == '__main__':
 
     # centrality(max_connected_component_graph)
 
-    mpa = mixed_preferential_attachment_three_colors(max_connected_component_graph)
+
+
+
+    # mpa = mixed_preferential_attachment_three_colors(max_connected_component_graph)
     # draw_graph_by_node_color(mpa)
-    mod, comm_dict, comms = directed_graph_modularity_with_communities(mpa)
-    print(f'modolarity: {mod}')
-
-
-
-    plot_avg_rating_distribution(max_connected_component_graph)
-    plot_avg_rating_distribution(max_connected_component_graph, color='red')
-    plot_avg_rating_distribution(max_connected_component_graph, color='yellow')
-    plot_avg_rating_distribution(max_connected_component_graph, color='blue')
+    # mod, comm_dict, comms = directed_graph_modularity_with_communities(mpa)
+    # print(f'modolarity: {mod}')
+    #
+    #
+    #
+    # plot_avg_rating_distribution(max_connected_component_graph)
+    # plot_avg_rating_distribution(max_connected_component_graph, color='red')
+    # plot_avg_rating_distribution(max_connected_component_graph, color='yellow')
+    # plot_avg_rating_distribution(max_connected_component_graph, color='blue')
 
