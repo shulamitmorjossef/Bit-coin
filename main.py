@@ -2654,3 +2654,5 @@ if __name__ == '__main__':
     calculate_symmetric_edge_percentage(n)
 
 
+    n1 = build_graph_weight_eq_to_target_only(max_connected_component_graph, 10)
+    calculate_symmetric_edge_percentage(n1)
