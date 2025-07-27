@@ -2540,49 +2540,49 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-
+# TODO remove comments out
     # draw_graph(G)
     # draw_graph(max_connected_component_graph)
 
-    # mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
-    # print(f"Total number of communities: {len(comms)}")
-    #
-    # for i, comm in enumerate(comms, start=1):
-    #     print(f"Community {i} has {len(comm)} nodes")
+    mod, comm_dict, comms = directed_graph_modularity_with_communities(max_connected_component_graph)
+    print(f"Total number of communities: {len(comms)}")
 
-    # compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
+    for i, comm in enumerate(comms, start=1):
+        print(f"Community {i} has {len(comm)} nodes")
 
-
-    # new_G = remove_node_from_graph(max_connected_component_graph, 3744)
+    compute_symmetric_edge_percentage_by_sign(max_connected_component_graph)
 
 
-
-    # print(directed_graph_modularity(max_connected_component_graph))
-
-
-    # coloredG = build_cross_color_edges_graph(max_connected_component_graph)
-    # degree_distributions(coloredG, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3)
-    # degree_distributions(coloredG, degree_type='out', title='max_connected_component_graph', x_min=2, x_max=3)
-    # degree_distributions(coloredG, degree_type='total', title='max_connected_component_graph', x_min=2, x_max=3)
-
-    # min_rating, max_rating = min_max_rating(max_connected_component_graph)
-    # print("min rating: ", min_rating, "\nmax rating: ", min_rating)
-
-    # centrality(max_connected_component_graph)
-    # draw_graph(max_connected_component_graph)
-
-    # draw_rating_histogram(max_connected_component_graph)
-
-    # all_power_law(max_connected_component_graph)
-    # all_degree_distributions(max_connected_component_graph)
+    new_G = remove_node_from_graph(max_connected_component_graph, 3744)
 
 
-    # compare_centrality(max_connected_component_graph)
-    # density(max_connected_component_graph)
-    # small_world(max_connected_component_graph)
-    # overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
 
-    # avg_dist = average_distance_directed(max_connected_component_graph)
+    print(directed_graph_modularity(max_connected_component_graph))
+
+
+    coloredG = build_cross_color_edges_graph(max_connected_component_graph)
+    degree_distributions(coloredG, degree_type='in', title='max_connected_component_graph',x_min=2, x_max=3)
+    degree_distributions(coloredG, degree_type='out', title='max_connected_component_graph', x_min=2, x_max=3)
+    degree_distributions(coloredG, degree_type='total', title='max_connected_component_graph', x_min=2, x_max=3)
+
+    min_rating, max_rating = min_max_rating(max_connected_component_graph)
+    print("min rating: ", min_rating, "\nmax rating: ", min_rating)
+
+    centrality(max_connected_component_graph)
+    draw_graph(max_connected_component_graph)
+
+    draw_rating_histogram(max_connected_component_graph)
+
+    all_power_law(max_connected_component_graph)
+    all_degree_distributions(max_connected_component_graph)
+
+
+    compare_centrality(max_connected_component_graph)
+    density(max_connected_component_graph)
+    small_world(max_connected_component_graph)
+    overlap(max_connected_component_graph, "Overlap and Weight", "neighborhood_overlap.png")
+
+    avg_dist = average_distance_directed(max_connected_component_graph)
 
     # run for ever
     # create_orders_and_draw(G)
@@ -2592,32 +2592,32 @@ if __name__ == '__main__':
     # ----------------------------------------------------------
 
 
-    # calculate_symmetric_edge_percentage(max_connected_component_graph)
-    # split_graph_by_color(max_connected_component_graph)
+    calculate_symmetric_edge_percentage(max_connected_component_graph)
+    split_graph_by_color(max_connected_component_graph)
 
-    # check_symmetric_edge_percentages_all_colors(max_connected_component_graph)
-    # percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
-    # print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
-    #       f"({equal_count} out of {total})")
+    check_symmetric_edge_percentages_all_colors(max_connected_component_graph)
+    percent, equal_count, total = compute_equal_in_out_degree_percentage(max_connected_component_graph)
+    print(f"Percentage of nodes with equal in-degree and out-degree: {percent:.2f}% "
+          f"({equal_count} out of {total})")
 
-    # spreading_mode(max_connected_component_graph)
-    # count_zero_weight_edges(max_connected_component_graph)
+    spreading_mode(max_connected_component_graph)
+    count_zero_weight_edges(max_connected_component_graph)
 
-    # analyze_top10_pagerank_reciprocal(max_connected_component_graph)
-    # analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
-    # directed_graph_modularity(max_connected_component_graph)
-    # analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
+    analyze_top10_pagerank_reciprocal(max_connected_component_graph)
+    analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
+    directed_graph_modularity(max_connected_component_graph)
+    analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
 
-    # pre = build_preferential_attachment_model(max_connected_component_graph)
-    #
-    # spreading_mode(max_connected_component_graph)
-    #
-    # spreading_mode(pre)
+    pre = build_preferential_attachment_model(max_connected_component_graph)
 
-    # degree_distribution_negative_graph(max_connected_component_graph)
+    spreading_mode(max_connected_component_graph)
+
+    spreading_mode(pre)
+
+    degree_distribution_negative_graph(max_connected_component_graph)
 
 
-    # centrality(max_connected_component_graph)
+    centrality(max_connected_component_graph)
 
 
 
