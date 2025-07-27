@@ -2635,7 +2635,7 @@ if __name__ == '__main__':
 
     # draw_graph_with_bayesian(max_connected_component_graph)
 
-    plot_bayesian_trust_distribution(max_connected_component_graph)
+    # plot_bayesian_trust_distribution(max_connected_component_graph)
     # plot_bayesian_trust_distribution(max_connected_component_graph, color='red')
     # plot_bayesian_trust_distribution(max_connected_component_graph, color='yellow')
     # plot_bayesian_trust_distribution(max_connected_component_graph, color='blue')
@@ -2649,4 +2649,8 @@ if __name__ == '__main__':
     # draw_graph_by_node_color(new_G, title="Bayesian Mixed Preferential Attachment")
 
     # build_cross_color_edges_graph_bayesian(max_connected_component_graph)
+
+    n = build_graph_weight_eq_to_target_only(max_connected_component_graph)
+    calculate_symmetric_edge_percentage(n)
+
 
