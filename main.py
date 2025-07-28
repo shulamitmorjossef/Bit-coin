@@ -2608,11 +2608,11 @@ if __name__ == '__main__':
     directed_graph_modularity(max_connected_component_graph)
     analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
 
-    pre = build_preferential_attachment_model(max_connected_component_graph)
+    # pre = build_preferential_attachment_model(max_connected_component_graph)
 
     spreading_mode(max_connected_component_graph)
 
-    spreading_mode(pre)
+    # spreading_mode(pre)
 
     degree_distribution_negative_graph(max_connected_component_graph)
 
