@@ -2454,7 +2454,6 @@ if __name__ == '__main__':
     analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
     compare_centrality(max_connected_component_graph)
 
-<<<<<<< HEAD
     # pre = build_preferential_attachment_model(max_connected_component_graph)
 
     spreading_mode(max_connected_component_graph)
@@ -2503,8 +2502,6 @@ if __name__ == '__main__':
 
     n1 = build_graph_weight_eq_to_target_only(max_connected_component_graph, 10)
     calculate_symmetric_edge_percentage(n1)
-=======
     print("==================================== Extreme Ratings ===================================")
     analyze_extreme_ratings(max_connected_component_graph)
 
->>>>>>> 037b851e0dae25ad85d32195f9b3bb6be114be00
