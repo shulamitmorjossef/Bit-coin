@@ -2004,7 +2004,8 @@ def split_graph_by_bayesian_color(G):
 
     # הדפסת מידע + ציור
     for color, subG in subgraphs.items():
-        print(f"\n=== Subgraph for {color.upper()} nodes ===")
+        print(f"------------------------Subgraph for {color.upper()} nodes-----------------------------")
+
         print(f"Number of nodes: {subG.number_of_nodes()}")
         print(f"Number of edges: {subG.number_of_edges()}")
 
@@ -2420,16 +2421,22 @@ if __name__ == '__main__':
     G = build_original_graph()
     max_connected_component_graph = build_max_connected_component_graph(G)
 
-    draw_graph_with_bayesian(max_connected_component_graph) # works
-    split_graph_by_bayesian_color(max_connected_component_graph)  #works
-    plot_bayesian_trust_distribution_all_graphes()  # works
-    build_cross_color_edges_graph_bayesian_same_color(max_connected_component_graph) #works
-    all_degree_distributions_bayesian(max_connected_component_graph) # works
-    degree_distribution_negative_graph(max_connected_component_graph) # works
-    centrality(max_connected_component_graph) # works
+    draw_graph_with_bayesian(max_connected_component_graph)
+
+    split_graph_by_bayesian_color(max_connected_component_graph)
+
+    plot_bayesian_trust_distribution_all_graphes()
+
+    build_cross_color_edges_graph_bayesian_same_color(max_connected_component_graph)
+
+    all_degree_distributions_bayesian(max_connected_component_graph)
+
+    degree_distribution_negative_graph(max_connected_component_graph)
+
+    centrality(max_connected_component_graph)  # works
 
     min_rating, max_rating = min_max_rating(max_connected_component_graph)
-    print("min rating: ", min_rating, "\nmax rating: ", min_rating)
+    print("min rating: ", min_rating, "\nmax rating: ", max_rating)
 
     print("======================================= small world ====================================")
     small_world(max_connected_component_graph)
@@ -2454,54 +2461,6 @@ if __name__ == '__main__':
     analyze_top10_pagerank_reciprocal_by_sign(max_connected_component_graph)
     compare_centrality(max_connected_component_graph)
 
-    # pre = build_preferential_attachment_model(max_connected_component_graph)
-
-    spreading_mode(max_connected_component_graph)
-
-    # spreading_mode(pre)
-
-    degree_distribution_negative_graph(max_connected_component_graph)
-
-
-    centrality(max_connected_component_graph)
-
-
-
-
-    # mpa = mixed_preferential_attachment_three_colors(max_connected_component_graph)
-    # draw_graph_by_node_color(mpa)
-    # mod, comm_dict, comms = directed_graph_modularity_with_communities(new_G)
-    # plot_avg_rating_distribution(max_connected_component_graph)
-    # plot_avg_rating_distribution(max_connected_component_graph, color='red')
-    # plot_avg_rating_distribution(max_connected_component_graph, color='yellow')
-    # plot_avg_rating_distribution(max_connected_component_graph, color='blue')
-
-
-#     -----------------NEW COLORED---------------------------
-
-    # draw_graph_with_bayesian(max_connected_component_graph)
-
-    # plot_bayesian_trust_distribution(max_connected_component_graph)
-    # plot_bayesian_trust_distribution(max_connected_component_graph, color='red')
-    # plot_bayesian_trust_distribution(max_connected_component_graph, color='yellow')
-    # plot_bayesian_trust_distribution(max_connected_component_graph, color='blue')
-
-    # all_degree_distributions_bayesian(max_connected_component_graph)
-
-    # split_graph_by_bayesian_color(max_connected_component_graph)
-
-    # all_power_law_bayesian(max_connected_component_graph)
-    # new_G = mixed_preferential_attachment_three_colors_bayesian(max_connected_component_graph, m=3)
-    # draw_graph_by_node_color(new_G, title="Bayesian Mixed Preferential Attachment")
-
-    # build_cross_color_edges_graph_bayesian(max_connected_component_graph)
-
-    n = build_graph_weight_eq_to_target_only(max_connected_component_graph)
-    calculate_symmetric_edge_percentage(n)
-
-
-    n1 = build_graph_weight_eq_to_target_only(max_connected_component_graph, 10)
-    calculate_symmetric_edge_percentage(n1)
     print("==================================== Extreme Ratings ===================================")
     analyze_extreme_ratings(max_connected_component_graph)
 
